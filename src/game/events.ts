@@ -35,7 +35,7 @@ export const EVENTS: GameEvent[] = [
     options: [
       { label: 'Reply thoughtfully', detail: 'Lose 6 HP. Upgrade a random card.', apply: (r) => ({ run: upgradeRandom({ ...r, hp: Math.max(1, r.hp - 6) }), text: 'Your reply gets 3 👀 reactions and one "+1". You learned something, though.' }) },
       { label: 'React with 🎉', detail: 'Gain 25 gold.', apply: (r) => ({ run: { ...r, gold: r.gold + 25 }, text: 'Somehow your emoji gets you nominated for Employee of the Month. It comes with a gift card.' }) },
-      { label: 'Mute the channel', detail: 'Nothing happens. Blissfully.', apply: (r) => ({ run: r, text: 'Silence. Beautiful, productive silence.' }) },
+      { label: 'Mute the channel', detail: 'Heal 8 HP.', apply: (r) => ({ run: { ...r, hp: Math.min(r.maxHp, r.hp + 8) }, text: 'Silence. Beautiful, productive silence. Your blood pressure thanks you.' }) },
     ],
   },
   {
@@ -46,7 +46,7 @@ export const EVENTS: GameEvent[] = [
     options: [
       { label: 'Have a slice', detail: 'Heal 15 HP.', apply: (r) => ({ run: { ...r, hp: Math.min(r.maxHp, r.hp + 15) }, text: 'Carrot cake. Surprisingly excellent.' }) },
       { label: 'Take three slices', detail: 'Heal 30 HP. Add a Sugar Crash curse to your deck.', apply: (r) => ({ run: { ...r, hp: Math.min(r.maxHp, r.hp + 30), deck: [...r.deck, mkCard('sugar_crash')] }, text: 'Worth it. Probably. Your pancreas files a deviation report.' }) },
-      { label: 'Leave it', detail: 'Nothing happens.', apply: (r) => ({ run: r, text: 'Discipline. The QA department nods approvingly.' }) },
+      { label: 'Bring it to QA', detail: 'Upgrade a random card.', apply: (r) => ({ run: upgradeRandom(r), text: 'Cake: the only bribe QA accepts. Your change request is approved in record time.' }) },
     ],
   },
   {
@@ -77,7 +77,7 @@ export const EVENTS: GameEvent[] = [
     options: [
       { label: 'Soak in the lagoon', detail: 'Lose 50 gold. Heal to full.', enabled: (r) => r.gold >= 50, apply: (r) => ({ run: { ...r, gold: r.gold - 50, hp: r.maxHp }, text: 'Silica mud mask. Zero stress. Mild sulfur smell.' }) },
       { label: 'Hike the volcano', detail: 'Lose 8 HP. Raise Max HP by 8.', apply: (r) => ({ run: { ...r, hp: Math.max(1, r.hp - 8), maxHp: r.maxHp + 8 }, text: 'Horizontal rain. Glorious views. You feel sturdier.' }) },
-      { label: 'Stay on the bus', detail: 'Nothing happens.', apply: (r) => ({ run: r, text: 'You answer emails. The bus smells of dried fish.' }) },
+      { label: 'Draft slides on the bus', detail: 'Gain 35 gold.', apply: (r) => ({ run: { ...r, gold: r.gold + 35 }, text: 'Your offsite recap deck impresses leadership. Spot bonus! The bus smells of dried fish.' }) },
     ],
   },
   {
@@ -87,7 +87,7 @@ export const EVENTS: GameEvent[] = [
     body: 'The door clicked shut behind you. It is −20 °C. While waiting for rescue, you have time to reflect on your habits.',
     options: [
       { label: 'Reflect deeply', detail: 'Lose 6 HP. Remove a card from your deck.', enabled: (r) => r.deck.length > 5, apply: (r) => ({ run: { ...r, hp: Math.max(1, r.hp - 6) }, text: 'REMOVE' }) },
-      { label: 'Do jumping jacks', detail: 'Nothing happens, but you stay warm.', apply: (r) => ({ run: r, text: 'Facilities lets you out after 20 minutes. You are logged as an excursion.' }) },
+      { label: 'Do jumping jacks', detail: 'Raise Max HP by 4.', apply: (r) => ({ run: { ...r, maxHp: r.maxHp + 4, hp: r.hp + 4 }, text: 'Cardio at −20 °C. Facilities lets you out after 20 minutes, logged as an excursion but noticeably fitter.' }) },
     ],
   },
   {
