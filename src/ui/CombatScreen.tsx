@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Portrait } from '../art/Portraits'
 import { DEF } from '../game/cards'
-import { canPlay } from '../game/combat'
-import { livingEnemies, STATUS_INFO } from '../game/core'
+import { canPlay, playCard } from '../game/combat'
+import { attackValue, livingEnemies, STATUS_INFO } from '../game/core'
 import { ENEMY, intentOf, shownDamage } from '../game/enemies'
 import type { CardInst, Combat, EnemyInst, Fighter, IntentKind, StatusId } from '../game/types'
 import { Card } from './Card'
 import { DeckModal } from './DeckModal'
 import { FxLayer } from './Fx'
+import { useScale } from './scale'
 
 const INTENT_ICON: Record<IntentKind, string> = {
   attack: '⚔️',
@@ -45,8 +46,9 @@ function Statuses({ f }: { f: Fighter }) {
   )
 }
 
-function HpBar({ f }: { f: Fighter }) {
+function HpBar({ f, loss = 0 }: { f: Fighter; loss?: number }) {
   const pct = Math.max(0, (f.hp / f.maxHp) * 100)
+  const lossPct = Math.min(pct, (loss / f.maxHp) * 100)
   const exc = f.statuses.excursion ? Math.min(pct, (f.statuses.excursion / f.maxHp) * 100) : 0
   return (
     <div className="hpbar-wrap">
@@ -59,6 +61,7 @@ function HpBar({ f }: { f: Fighter }) {
         <div className="hptrail" style={{ width: `${pct}%` }} />
         <div className="hpfill" style={{ width: `${pct}%` }} />
         {exc > 0 && <div className="hpfill-poison" style={{ width: `${exc}%`, left: `${pct - exc}%` }} />}
+        {lossPct > 0 && <div className="hpfill-preview" style={{ width: `${lossPct}%`, left: `${pct - lossPct}%` }} />}
         <span className="hptext">
           {f.hp}/{f.maxHp}
         </span>
@@ -89,7 +92,13 @@ function Speech({ c, target }: { c: Combat; target: string }) {
   )
 }
 
-function EnemyView({ e, c, targeting, onTarget }: { e: EnemyInst; c: Combat; targeting: boolean; onTarget: () => void }) {
+interface Preview {
+  hp: number
+  block: number
+  lethal: boolean
+}
+
+function EnemyView({ e, c, targeting, onTarget, preview, onHover }: { e: EnemyInst; c: Combat; targeting: boolean; onTarget: () => void; preview?: Preview; onHover: (on: boolean) => void }) {
   const def = ENEMY[e.defId]
   const it = intentOf(e, c)
   const dmg = shownDamage(e, c)
@@ -99,6 +108,8 @@ function EnemyView({ e, c, targeting, onTarget }: { e: EnemyInst; c: Combat; tar
       data-uid={e.uid}
       className={`fighter enemy tier-${def.tier} ${e.dead ? 'dead' : ''} ${targeting && !e.dead ? 'targetable' : ''}`}
       onClick={() => targeting && !e.dead && onTarget()}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
       role={targeting ? 'button' : undefined}
       aria-label={`${def.name}, ${e.hp} HP`}
     >
@@ -127,7 +138,14 @@ function EnemyView({ e, c, targeting, onTarget }: { e: EnemyInst; c: Combat; tar
           {def.name}
           {def.title && <span className="fighter-title">{def.title}</span>}
         </div>
-        <HpBar f={e} />
+        {preview && !e.dead && (
+          <div className={`dmg-preview ${preview.lethal ? 'lethal' : ''}`}>
+            {preview.lethal ? '☠ ' : '💥 '}
+            {preview.hp}
+            {preview.block > 0 && <small> +{preview.block} 🛡️</small>}
+          </div>
+        )}
+        <HpBar f={e} loss={preview && !e.dead ? preview.hp : 0} />
         <Statuses f={e} />
       </div>
       {def.bio && <div className="bio">{def.bio}</div>}
@@ -137,7 +155,7 @@ function EnemyView({ e, c, targeting, onTarget }: { e: EnemyInst; c: Combat; tar
 
 interface Flying {
   card: CardInst
-  from: DOMRect
+  from: { x: number; y: number }
   to: { x: number; y: number }
   go: boolean
   kind: string
@@ -164,6 +182,9 @@ export function CombatScreen({
   const [screenShake, setScreenShake] = useState(false)
   const [intro, setIntro] = useState<EnemyInst | null>(() => (c.turn === 1 ? c.enemies.find((e) => ENEMY[e.defId].tier === 'boss') ?? null : null))
   const lastShake = useRef(c.shake)
+  const scale = useScale()
+  const [hoverCard, setHoverCard] = useState<string | null>(null)
+  const [hoverEnemy, setHoverEnemy] = useState<string | null>(null)
 
   const selectedCard = c.hand.find((h) => h.uid === selected) ?? null
   const targeting = !!selectedCard && DEF[selectedCard.id].target === 'enemy'
@@ -196,13 +217,19 @@ export function CombatScreen({
     const dest = target ? document.querySelector(`.enemy[data-uid="${target}"] .sprite-wrap`) : d.type === 'power' ? document.querySelector('.player .sprite-wrap') : null
     const bf = document.querySelector('.battlefield')?.getBoundingClientRect()
     const tr = dest?.getBoundingClientRect()
-    const to = tr ? { x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 } : { x: (bf?.left ?? 0) + (bf?.width ?? 800) / 2, y: (bf?.top ?? 0) + (bf?.height ?? 400) * 0.45 }
+    const screenTo = tr ? { x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 } : { x: (bf?.left ?? 0) + (bf?.width ?? 800) / 2, y: (bf?.top ?? 0) + (bf?.height ?? 400) * 0.45 }
+    // The game root is scaled; convert screen coordinates into its local (unscaled) space.
+    const root = document.querySelector('.combat')?.getBoundingClientRect()
+    const local = (x: number, y: number) => ({ x: (x - (root?.left ?? 0)) / scale, y: (y - (root?.top ?? 0)) / scale })
+    const to = local(screenTo.x, screenTo.y)
     setSelected(null)
     if (!el) {
       onPlay(card.uid, target)
       return
     }
-    setFlying({ card, from: el.getBoundingClientRect(), to, go: false, kind: d.type })
+    const r = el.getBoundingClientRect()
+    const c0 = local(r.left + r.width / 2, r.top + r.height / 2)
+    setFlying({ card, from: c0, to, go: false, kind: d.type })
     requestAnimationFrame(() => requestAnimationFrame(() => setFlying((f) => (f ? { ...f, go: true } : f))))
     setTimeout(() => {
       onPlay(card.uid, target)
@@ -247,6 +274,32 @@ export function CombatScreen({
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // Exact damage preview: simulate the card on a copy of the fight and diff each enemy.
+  const previewUid = selected ?? hoverCard
+  const preview = useMemo(() => {
+    const card = c.hand.find((h) => h.uid === previewUid)
+    if (!card || c.phase !== 'player' || flying || !canPlay(c, card)) return null
+    const out: Record<string, Preview> = {}
+    const measure = (after: Combat, only?: string) => {
+      for (const e of livingEnemies(c)) {
+        if (only && e.uid !== only) continue
+        const a = after.enemies.find((x) => x.uid === e.uid)
+        if (!a) continue
+        const hp = e.hp - a.hp
+        const block = Math.max(0, e.block - a.block)
+        if (hp > 0 || block > 0) out[e.uid] = { hp, block, lethal: a.hp <= 0 }
+      }
+    }
+    if (DEF[card.id].target === 'enemy') for (const e of livingEnemies(c)) measure(playCard(c, card.uid, e.uid), e.uid)
+    else measure(playCard(c, card.uid, null))
+    return out
+  }, [c, previewUid, flying])
+
+  // Numbers in "Deal N damage" reflect Strength, Weak and (for the hovered or only enemy) Vulnerable.
+  const living = livingEnemies(c)
+  const dmgTarget = hoverEnemy ?? (living.length === 1 ? living[0].uid : null)
+  const dmgMod = (base: number) => attackValue(c, 'player', dmgTarget, base)
+
   const n = c.hand.length
   const hasPlayable = c.hand.some((h) => canPlay(c, h))
 
@@ -272,7 +325,15 @@ export function CombatScreen({
         </div>
         <div className="side enemy-side">
           {c.enemies.map((e) => (
-            <EnemyView key={e.uid} e={e} c={c} targeting={targeting} onTarget={() => selectedCard && launch(selectedCard, e.uid)} />
+            <EnemyView
+              key={e.uid}
+              e={e}
+              c={c}
+              targeting={targeting}
+              preview={preview?.[e.uid]}
+              onHover={(on) => setHoverEnemy(on ? e.uid : null)}
+              onTarget={() => selectedCard && launch(selectedCard, e.uid)}
+            />
           ))}
         </div>
       </div>
@@ -331,6 +392,8 @@ export function CombatScreen({
               <div
                 key={card.uid}
                 className={`hand-slot ${selected === card.uid ? 'sel' : ''} ${shake === card.uid ? 'shake' : ''} ${hidden ? 'launched' : ''}`}
+                onMouseEnter={() => setHoverCard(card.uid)}
+                onMouseLeave={() => setHoverCard((h) => (h === card.uid ? null : h))}
                 style={{ ['--rot' as string]: `${rot}deg`, ['--lift' as string]: `${lift}px`, ['--i' as string]: i, ['--off' as string]: off, zIndex: selected === card.uid ? 50 : i, marginLeft: i === 0 ? 0 : n > 7 ? -52 : -26 }}
               >
                 <Card
@@ -342,6 +405,7 @@ export function CombatScreen({
                   onClick={() => clickCard(card)}
                   hotkey={i < 10 ? (i + 1) % 10 : undefined}
                   tips={off > 0 ? 'left' : 'right'}
+                  dmgMod={dmgMod}
                 />
               </div>
             )
@@ -366,11 +430,10 @@ export function CombatScreen({
         <div
           className={`flying-card fly-${flying.kind} ${flying.go ? 'go' : ''}`}
           style={{
-            left: flying.from.left,
-            top: flying.from.top,
-            width: flying.from.width,
-            ['--tx' as string]: `${flying.to.x - (flying.from.left + flying.from.width / 2)}px`,
-            ['--ty' as string]: `${flying.to.y - (flying.from.top + flying.from.height / 2)}px`,
+            left: flying.from.x,
+            top: flying.from.y,
+            ['--tx' as string]: `${flying.to.x - flying.from.x}px`,
+            ['--ty' as string]: `${flying.to.y - flying.from.y}px`,
             transitionDuration: `${FLY_MS}ms`,
           }}
         >

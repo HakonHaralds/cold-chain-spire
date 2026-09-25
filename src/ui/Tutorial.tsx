@@ -88,11 +88,15 @@ export function Tour({ id, onDone }: { id: string; onDone: () => void }) {
     markTour(id)
     onDone()
   }
+  const skipAll = () => {
+    for (const t of Object.keys(TOURS)) markTour(t)
+    onDone()
+  }
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       e.stopPropagation()
-      if (e.key === 'Escape') finish()
+      if (e.key === 'Escape') skipAll()
       else if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') next()
     }
     window.addEventListener('keydown', k, true)
@@ -121,7 +125,7 @@ export function Tour({ id, onDone }: { id: string; onDone: () => void }) {
         <h3>{step.title}</h3>
         <p>{step.body}</p>
         <div className="tour-actions">
-          <button className="btn ghost small" onClick={finish}>
+          <button className="btn ghost small" onClick={skipAll}>
             Skip tutorial
           </button>
           <button className="btn primary small" onClick={next} autoFocus>

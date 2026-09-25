@@ -108,6 +108,20 @@ kbd {
   inset: 0;
   background: linear-gradient(transparent 55%, rgba(0, 0, 0, 0.55));
 }
+.viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+.game-root {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center center;
+}
 .stage {
   position: relative;
   z-index: 1;
@@ -1452,33 +1466,6 @@ kbd {
   }
 }
 
-/* ---------- responsive ---------- */
-@media (max-width: 1100px) {
-  .map-screen {
-    grid-template-columns: 1fr;
-  }
-  .map-side {
-    display: none;
-  }
-  .card {
-    --w: 124px;
-  }
-  .hand-area {
-    grid-template-columns: 100px 1fr 120px;
-    height: 210px;
-  }
-  .energy-orb {
-    width: 64px;
-    height: 64px;
-    font-size: 20px;
-  }
-}
-@media (max-height: 820px) {
-  .fighter .portrait {
-    max-height: 32vh;
-    width: auto;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1669,7 +1656,8 @@ kbd {
 
 /* flying card */
 .flying-card {
-  position: fixed;
+  position: absolute;
+  translate: -50% -50%;
   z-index: 150;
   pointer-events: none;
   transition-property: transform, opacity, filter;
@@ -2392,11 +2380,7 @@ kbd {
   margin-top: 10px;
   justify-content: flex-start;
 }
-@media (max-width: 900px) {
-  .cs-detail {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 /* ---------- tutorial ---------- */
 .tour {
@@ -2481,4 +2465,46 @@ kbd {
   font-size: 12px;
   font-weight: 400;
   opacity: 0.85;
+}
+
+/* ---------- damage preview ---------- */
+.hpfill-preview {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: repeating-linear-gradient(-45deg, #fff 0 4px, #ffd166 4px 8px);
+  opacity: 0.85;
+  animation: previewBlink 0.9s ease-in-out infinite;
+}
+@keyframes previewBlink {
+  50% {
+    opacity: 0.45;
+  }
+}
+.dmg-preview {
+  display: inline-block;
+  margin: 2px 0;
+  padding: 1px 10px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 16px;
+  color: #ffe08a;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #ffd166;
+  animation: pop 200ms ease both;
+}
+.dmg-preview small {
+  font-size: 11px;
+  color: #9cc7ff;
+}
+.dmg-preview.lethal {
+  color: #ff8f8f;
+  border-color: #ff5a5a;
+  box-shadow: 0 0 12px rgba(255, 60, 60, 0.6);
+}
+.card-text b.dmg-up {
+  color: #6dff9e;
+}
+.card-text b.dmg-down {
+  color: #ff8a8a;
 }

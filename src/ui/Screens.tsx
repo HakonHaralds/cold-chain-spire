@@ -137,6 +137,7 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
     onUse()
   }
   const healAmt = Math.round(run.maxHp * 0.3)
+  const wired = run.relics.includes('espresso')
   return (
     <div className="panel-screen">
       <div className="panel rest">
@@ -145,10 +146,10 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
         <p className="muted">It makes a noise like a jet engine. The coffee is excellent. Someone left a Post-it: "DESCALE ME".</p>
         {!done ? (
           <div className="rest-options">
-            <button className="btn option" onClick={() => { setRun({ ...run, hp: Math.min(run.maxHp, run.hp + healAmt) }); setDone(`You recover ${healAmt} HP.`) }}>
-              <span className="opt-icon">😌</span>
+            <button className="btn option" disabled={wired} onClick={() => { setRun({ ...run, hp: Math.min(run.maxHp, run.hp + healAmt) }); setDone(`You recover ${healAmt} HP.`) }}>
+              <span className="opt-icon">{wired ? '⚡' : '😌'}</span>
               <b>Rest</b>
-              <span>Heal {healAmt} HP</span>
+              <span>{wired ? 'Too wired (Espresso Machine)' : `Heal ${healAmt} HP`}</span>
             </button>
             <button className="btn option" onClick={() => setPicking(true)} disabled={!run.deck.some(isUpgradable)}>
               <span className="opt-icon">🛠️</span>
@@ -159,13 +160,11 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
         ) : (
           <p className="result">{done}</p>
         )}
-        {done && (
-          <div className="actions">
-            <button className="btn primary" onClick={onDone}>
-              Continue
-            </button>
-          </div>
-        )}
+        <div className="actions">
+          <button className={`btn ${done ? 'primary' : 'ghost'}`} onClick={onDone}>
+            {done ? 'Continue' : 'Leave'}
+          </button>
+        </div>
       </div>
       {picking && (
         <DeckModal

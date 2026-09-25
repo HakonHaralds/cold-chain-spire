@@ -1,5 +1,5 @@
 import { DEF, cardCost } from './cards'
-import { addStatus, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
+import { addCards, addStatus, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
 import { ENEMY, intentOf, mkEnemy, speak } from './enemies'
 import type { CardInst, Combat, Run, StatusId } from './types'
 
@@ -14,7 +14,7 @@ export function startCombat(run: Run, enemyIds: string[], kind: Combat['kind']):
   const c: Combat = {
     player: { hp: run.hp, maxHp: run.maxHp, block: 0, statuses: {} },
     energy: 0,
-    maxEnergy: 3 + (run.relics.includes('espresso') ? 1 : 0) + (run.relics.includes('stock_options') ? 1 : 0),
+    maxEnergy: 3 + (run.relics.includes('espresso') ? 1 : 0) + (run.relics.includes('stock_options') ? 1 : 0) + (run.relics.includes('unlimited_pto') ? 1 : 0),
     enemies: enemyIds.map((id) => mkEnemy(id, run.act)),
     draw: shuffle(run.deck.map((d) => ({ ...d }))),
     hand: [],
@@ -35,6 +35,7 @@ export function startCombat(run: Run, enemyIds: string[], kind: Combat['kind']):
     relics: run.relics,
   }
   if (run.relics.includes('energy_drink')) c.player.statuses.strength = 1
+  if (run.relics.includes('unlimited_pto')) addCards(c, 'meeting', 'draw', 2)
   if (run.relics.includes('headphones')) c.player.statuses.dexterity = 1
   if (run.relics.includes('soldering_station')) gainCharge(c, 3)
   for (const e of c.enemies) {

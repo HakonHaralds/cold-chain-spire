@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { poolFor, rollCardRewards } from './game/cards'
 import { CHARACTERS } from './game/characters'
 import { applyCombatResult, endPlayerTurn, enemyAct, finishEnemyPhase, playCard, startCombat } from './game/combat'
@@ -18,6 +18,7 @@ import { Gallery } from './ui/Gallery'
 import { CharSelect } from './ui/CharSelect'
 import { Tour, tourDone } from './ui/Tutorial'
 import { GameMenu } from './ui/GameMenu'
+import { BASE_H, BASE_W, ScaleContext } from './ui/scale'
 import { clearSave, readSave, saveable, writeSave } from './game/save'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -56,6 +57,13 @@ export default function App() {
   const [showDeck, setShowDeck] = useState(false)
   const [lastEvents, setLastEvents] = useState<string[]>([])
   const [menu, setMenu] = useState(false)
+  const [scale, setScale] = useState(1)
+  useLayoutEffect(() => {
+    const fit = () => setScale(Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H))
+    fit()
+    window.addEventListener('resize', fit)
+    return () => window.removeEventListener('resize', fit)
+  }, [])
   const [hasSave, setHasSave] = useState(() => !!readSave())
   const devMode = new URLSearchParams(location.search).has('fight')
 
@@ -233,6 +241,9 @@ export default function App() {
   return (
     <div className={`app act-${run?.act ?? 1}`}>
       <Backdrop act={screen.kind === 'title' ? 0 : run?.act ?? 1} />
+      <ScaleContext.Provider value={scale}>
+      <div className="viewport">
+      <div className="game-root" style={{ width: BASE_W, height: BASE_H, transform: `translate(-50%, -50%) scale(${scale})` }}>
       {inGame && run && <TopBar run={run} combat={screen.kind === 'combat' ? combat : null} onDeck={() => setShowDeck(true)} onMenu={() => setMenu(true)} />}
       <main className="stage">
         <div key={screen.kind === 'combat' ? `combat-${run?.floor}` : screen.kind} className="screen-enter">
@@ -272,9 +283,12 @@ export default function App() {
         {screen.kind === 'victory' && run && hero && <VictoryScreen run={run} portrait={hero.portrait} onRestart={start} />}
         </div>
       </main>
-      {tour && <Tour id={tour} onDone={() => setTour(null)} />}
-      {menu && <GameMenu canSave={saveable(screen, combat)} onResume={() => setMenu(false)} onSaveQuit={toTitle} onAbandon={abandon} />}
       {showDeck && run && <DeckModal title="Your deck" cards={run.deck} onClose={() => setShowDeck(false)} />}
+      {menu && <GameMenu canSave={saveable(screen, combat)} onResume={() => setMenu(false)} onSaveQuit={toTitle} onAbandon={abandon} />}
+      </div>
+      </div>
+      </ScaleContext.Provider>
+      {tour && <Tour id={tour} onDone={() => setTour(null)} />}
     </div>
   )
 }
