@@ -1928,21 +1928,34 @@ kbd {
 
 /* death */
 .fighter.dead {
-  animation: dieBig 900ms ease-in forwards;
+  animation: dieBig 1300ms ease-in forwards;
 }
 @keyframes dieBig {
   0% {
     filter: brightness(3) saturate(0);
+    max-width: 420px;
   }
   30% {
     transform: translateY(-6px) scale(1.04);
     opacity: 1;
   }
-  100% {
+  70% {
     opacity: 0;
+    max-width: 420px;
     transform: translateY(40px) scale(0.85) skewX(-6deg);
     filter: grayscale(1) blur(3px);
   }
+  /* Collapse the slot so the remaining enemies (e.g. the CEO after his Yes-Men fall) slide back into place. */
+  100% {
+    opacity: 0;
+    max-width: 0;
+    margin: 0 -4px;
+    transform: translateY(40px) scale(0.85);
+  }
+}
+.fighter.enemy {
+  max-width: 420px;
+  transition: max-width 300ms ease;
 }
 
 /* ---------- fx layer ---------- */
@@ -2703,4 +2716,71 @@ kbd {
   opacity: 0.5;
   border-style: dashed;
   cursor: help;
+}
+
+/* ---------- status/curse cards triggering from hand ---------- */
+.cardfx-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 170px;
+  height: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+.cardfx {
+  position: absolute;
+  left: 30%;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  translate: calc(-50% + var(--k) * 150px) 0;
+  animation: cardfxPop 1700ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.cardfx .card {
+  box-shadow: 0 0 0 3px #ff5a5a, 0 0 30px rgba(255, 60, 60, 0.7);
+}
+.cardfx-text {
+  font-weight: 900;
+  font-size: 24px;
+  color: #ff6b6b;
+  text-shadow: 0 2px 0 #000, 0 0 10px #000;
+}
+@keyframes cardfxPop {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(0.5) rotate(-6deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.08);
+  }
+  28% {
+    transform: translateY(0) scale(1) rotate(0);
+  }
+  38% {
+    transform: translateX(-6px);
+  }
+  44% {
+    transform: translateX(6px);
+  }
+  50%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-260px, -120px) scale(0.3);
+  }
+}
+
+/* Minions (e.g. Yes-Men) are small: keep their info panel narrow so a full summon doesn't push the boss off-screen. */
+.tier-minion .fighter-info {
+  width: 140px;
+}
+.tier-minion .fighter-name {
+  font-size: 12px;
 }

@@ -16,6 +16,13 @@ export function shuffle<T>(arr: T[]): T[] {
 
 export const st = (f: Fighter, id: StatusId) => f.statuses[id] ?? 0
 
+/** Relic event hooks, filled in by relics.ts (kept here to avoid a circular import). */
+export const relicEvents: {
+  exhaust: (c: Combat, n: number, bugs: number) => void
+  enemyDeath: (c: Combat, e: EnemyInst) => void
+  hpLoss: (c: Combat, n: number) => void
+} = { exhaust: () => {}, enemyDeath: () => {}, hpLoss: () => {} }
+
 /** Combat stats (created lazily so combats restored from older saves still work). */
 export const cstats = (c: Combat) => (c.stats ??= emptyCombatStats())
 
@@ -38,6 +45,11 @@ export function fx(c: Combat, target: string, kind: Combat['fx'][number]['kind']
   c.fx.push({ id: seq++, target, kind, big })
 }
 
+/** A status or curse card in hand did something: pop it up so the player sees why. */
+export function cardTrigger(c: Combat, cardId: string, text: string) {
+  c.cardFx = [...(c.cardFx ?? []), { id: seq++, cardId, text }].slice(-6)
+}
+
 export function say(c: Combat, target: string, text: string) {
   c.speech = { target, text, id: seq++ }
 }
@@ -57,7 +69,14 @@ export function addStatus(c: Combat, target: string, id: StatusId, n: number) {
   if (!f || n === 0) return
   if (target !== 'player' && (f as EnemyInst).dead) return
   // Dry Ice Pack: apply 1 extra Excursion.
-  if (id === 'excursion' && target !== 'player' && c.relics.includes('dry_ice')) n += 1
+  if (id === 'excursion' && target !== 'player' && n > 0 && c.relics.includes('dry_ice')) {
+    const key = 'dry'
+    const state = (c.relicState ??= {})
+    if (state[key] !== c.turn) {
+      state[key] = c.turn
+      n += 1
+    }
+  }
   f.statuses[id] = (f.statuses[id] ?? 0) + n
   if (f.statuses[id] === 0) delete f.statuses[id]
   if (id === 'excursion' && target !== 'player' && n > 0) cstats(c).excursionApplied += n
@@ -94,6 +113,8 @@ export function applyDamage(c: Combat, target: string, dmg: number, source?: str
       fx(c, target, 'blockhit')
     }
   }
+  // Travel Insurance: small attack hits on the player are reduced to 1.
+  if (target === 'player' && source !== undefined && rest >= 2 && rest <= 5 && c.relics.includes('travel_insurance')) rest = 1
   if (rest > 0) {
     t.hp = Math.max(0, t.hp - rest)
     addFloat(c, target, `-${rest}`, 'damage')
@@ -102,13 +123,17 @@ export function applyDamage(c: Combat, target: string, dmg: number, source?: str
     fx(c, target, source === 'player' || source === 'thorns-player' ? 'slash' : 'claw', big)
     if (big) c.shake += 1
     if (source === 'player' || source === 'thorns-player') c.dmgDealt += rest
-    if (target === 'player') cstats(c).damageTaken += rest
+    if (target === 'player') {
+      cstats(c).damageTaken += rest
+      relicEvents.hpLoss(c, rest)
+    }
   }
   if ((source === 'player' || source === 'thorns-player') && target !== 'player') cstats(c).maxHit = Math.max(cstats(c).maxHit, Math.min(dmg, blockBefore) + rest)
-  if (target !== 'player' && t.hp <= 0) {
+  if (target !== 'player' && t.hp <= 0 && !(t as EnemyInst).dead) {
     ;(t as EnemyInst).dead = true
     t.block = 0
     fx(c, target, 'death', true)
+    relicEvents.enemyDeath(c, t as EnemyInst)
   }
   return rest
 }
@@ -139,9 +164,11 @@ export function loseHp(c: Combat, target: string, n: number) {
   addFloat(c, target, `-${n}`, 'damage')
   fx(c, target, 'heat')
   anim(c, target, 'hit')
-  if (target !== 'player' && f.hp <= 0) {
+  if (target === 'player') relicEvents.hpLoss(c, n)
+  if (target !== 'player' && f.hp <= 0 && !(f as EnemyInst).dead) {
     ;(f as EnemyInst).dead = true
     fx(c, target, 'death', true)
+    relicEvents.enemyDeath(c, f as EnemyInst)
   }
 }
 
@@ -196,6 +223,7 @@ export function drawCards(c: Combat, n: number) {
     if (card.id === 'hangover') {
       c.energy = Math.max(0, c.energy - 1)
       addFloat(c, 'player', '-1 Energy (Hangover)', 'status')
+      cardTrigger(c, 'hangover', '−1 Energy')
     }
   }
 }
@@ -261,6 +289,7 @@ export function exhaustBugs(c: Combat, where: Pile[], max = Infinity): number {
   if (n === 0) return 0
   cstats(c).bugsExhausted += n
   cstats(c).cardsExhausted += n
+  relicEvents.exhaust(c, n, n)
   addFloat(c, 'player', `-${n} Bug${n > 1 ? 's' : ''}`, 'status')
   if (c.relics.includes('jlink')) {
     for (let i = 0; i < n; i++) {

@@ -156,7 +156,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'bestiary_all', name: 'Org Chart Memorized', desc: 'Encounter every enemy.', icon: '🗂️', tier: 'gold', category: 'Collection', on: M, test: (_x, m) => Object.keys(ENEMY).every((id) => (m.compendium.enemies[id]?.seen ?? 0) > 0) },
   { id: 'cards_half', name: 'Knowledge Base', desc: 'Discover half of all cards.', icon: '📚', tier: 'silver', category: 'Collection', on: M, test: (_x, m) => m.compendium.cards.length >= COLLECTIBLE_CARDS.length / 2 },
   { id: 'cards_all', name: 'Documentation Complete', desc: 'Discover every card.', icon: '📖', tier: 'platinum', category: 'Collection', hidden: true, on: M, test: (_x, m) => COLLECTIBLE_CARDS.every((id) => m.compendium.cards.includes(id)) },
-  { id: 'relics_all', name: 'Swag Hoarder', desc: 'Discover every relic.', icon: '🎁', tier: 'gold', category: 'Collection', on: M, test: (_x, m) => Object.keys(RELIC).every((id) => m.compendium.relics.includes(id)) },
+  { id: 'relics_all', name: 'Swag Hoarder', desc: 'Discover every relic.', icon: '🎁', tier: 'gold', category: 'Collection', on: M, test: (_x, m) => Object.values(RELIC).filter((r) => r.tier !== 'starter').every((r) => m.compendium.relics.includes(r.id)) },
   { id: 'quotes25', name: 'Minutes Taker', desc: 'Hear 25 different enemy quotes.', icon: '🗒️', tier: 'silver', category: 'Collection', on: M, test: (_x, m) => Object.values(m.compendium.lines).reduce((a, l) => a + l.length, 0) >= 25 },
 
   // ---------- Career ----------

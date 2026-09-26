@@ -1,6 +1,6 @@
 import { poolFor } from '../game/cards'
 import { mkCard, pick } from '../game/core'
-import { COMMON_RELICS } from '../game/relics'
+import { COMMON_RELICS, grantRelic } from '../game/relics'
 import type { CharId, Run } from '../game/types'
 import { loadMeta } from './profile'
 
@@ -85,7 +85,7 @@ export const PERKS: PerkDef[] = [
   { id: 'hw_solder_tip', name: 'Fresh Solder Tip', icon: '🔥', desc: 'Start with Solder Joint and Discharge upgraded.' },
   { id: 'cal_certificate', name: 'Fresh Certificate', icon: '📜', desc: 'Start with Thermocouple Jab and Ice Bath upgraded.' },
   { id: 'desk_duck', name: 'Desk Duck', icon: '🦆', desc: 'Start with the Rubber Duck relic.' },
-  { id: 'dry_ice_start', name: 'Cooler Box', icon: '❄️', desc: 'Start with the Dry Ice Pack relic.' },
+  { id: 'dry_ice_start', name: 'Cooler Box', icon: '🧊', desc: 'Start with the Phase-Change Packs relic.' },
   { id: 'hoodie_start', name: 'Day-One Hoodie', icon: '🧥', desc: 'Start with the Company Hoodie relic.' },
   { id: 'seed_funding', name: 'Seed Funding', icon: '💸', desc: 'Start with 25k extra tokens.' },
   { id: 'gym_membership', name: 'Gym Membership', icon: '🏋️', desc: 'Start with 6 extra Max HP.' },
@@ -173,8 +173,8 @@ export function applyPerk(run: Run, perkId: string | null): Run {
     case 'desk_duck':
     case 'dry_ice_start':
     case 'hoodie_start': {
-      const id = { desk_duck: 'rubber_duck', dry_ice_start: 'dry_ice', hoodie_start: 'hoodie' }[perkId]
-      if (!r.relics.includes(id)) r.relics.push(id)
+      const id = { desk_duck: 'rubber_duck', dry_ice_start: 'phase_change', hoodie_start: 'hoodie' }[perkId]
+      if (!r.relics.includes(id)) return grantRelic(r, id)
       break
     }
     case 'gym_membership':
@@ -183,12 +183,7 @@ export function applyPerk(run: Run, perkId: string | null): Run {
       break
     case 'swag_bag': {
       const pool = COMMON_RELICS.filter((id) => !r.relics.includes(id) && id !== 'kanelsnudur')
-      const id = pick(pool)
-      r.relics.push(id)
-      if (id === 'lanyard') {
-        r.maxHp += 10
-        r.hp += 10
-      }
+      if (pool.length) return grantRelic(r, pick(pool))
       break
     }
     case 'code_cleanup': {

@@ -183,6 +183,8 @@ export function CombatScreen({
   const [screenShake, setScreenShake] = useState(false)
   const [intro, setIntro] = useState<EnemyInst | null>(() => (c.turn === 1 ? c.enemies.find((e) => ENEMY[e.defId].tier === 'boss') ?? null : null))
   const lastShake = useRef(c.shake)
+  // Enemies that were already dead when this screen mounted (e.g. loading a save) are simply not shown.
+  const deadAtMount = useRef(new Set(c.enemies.filter((e) => e.dead).map((e) => e.uid)))
   const scale = useScale()
   const [hoverCard, setHoverCard] = useState<string | null>(null)
   const [hoverEnemy, setHoverEnemy] = useState<string | null>(null)
@@ -343,7 +345,7 @@ export function CombatScreen({
           <CompanionView c={c} />
         </div>
         <div className="side enemy-side">
-          {c.enemies.map((e) => (
+          {c.enemies.filter((e) => !deadAtMount.current.has(e.uid)).map((e) => (
             <EnemyView
               key={e.uid}
               e={e}
@@ -357,6 +359,14 @@ export function CombatScreen({
         </div>
       </div>
 
+      <div className="cardfx-layer" aria-hidden>
+        {(c.cardFx ?? []).map((f, i, arr) => (
+          <div key={f.id} className="cardfx" style={{ ['--k' as string]: i - (arr.length - 1) / 2, animationDelay: `${(i % 3) * 120}ms` }}>
+            <Card id={f.cardId} small tips="none" />
+            <span className="cardfx-text">{f.text}</span>
+          </div>
+        ))}
+      </div>
       {targeting && aim && (
         <svg className="aim-arrow" aria-hidden>
           <defs>

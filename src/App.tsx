@@ -8,7 +8,7 @@ import { ENCOUNTERS } from './game/enemies'
 import { EVENTS, eventsFor } from './game/events'
 import { DEFAULT_SETTINGS, generateMap, rollSettings } from './game/map'
 import { claimOkr, rollOkrs, startOkr } from './game/okrs'
-import { BOSS_RELICS, COMMON_RELICS } from './game/relics'
+import { grantRelic as applyRelic, relicMods, relicPrice, rollBossRelics, rollRelic } from './game/relics'
 import { clearSave, readSave, saveable, writeSave } from './game/save'
 import { bump, emptyRunStats } from './game/stats'
 import type { CharId, Combat, MapNode, Run, Screen } from './game/types'
@@ -98,13 +98,9 @@ function migrateRun(r: Run): Run {
 }
 
 function grantRelic(run: Run, id: string): Run {
-  let r = { ...run, relics: [...run.relics, id], stats: bump(run.stats, { relicsGained: 1 }) }
-  if (id === 'lanyard') r = { ...r, maxHp: r.maxHp + 10, hp: r.hp + 10 }
-  if (id === 'kanelsnudur') r = { ...r, hp: Math.min(r.maxHp, r.hp + 20) }
-  return r
+  // Pickup effects (Max HP, heals, tokens, bonus relics) live on the relic definitions.
+  return applyRelic({ ...run, stats: bump(run.stats, { relicsGained: 1 }) }, id)
 }
-
-const unownedCommon = (run: Run) => COMMON_RELICS.filter((id) => !run.relics.includes(id))
 
 /** Toast wrapper for non-achievement announcements (e.g. an OKR completing). */
 const notice = (name: string, desc: string, icon = '🎯'): AchievementDef =>
@@ -254,17 +250,21 @@ export default function App() {
         setScreen({ kind: 'rest' })
         break
       case 'treasure':
-        setScreen({ kind: 'treasure', relic: pick(unownedCommon(r).length ? unownedCommon(r) : ['kanelsnudur']), taken: false })
+        setScreen({ kind: 'treasure', relic: rollRelic(r, 'treasure') ?? 'kanelsnudur', taken: false })
         break
       case 'shop': {
-        const mul = shopPriceMul(r.reviewLevel) * benefitShopMul()
+        const mods = relicMods(r.relics)
+        const mul = shopPriceMul(r.reviewLevel) * benefitShopMul() * mods.shopMul
         const price = (base: number) => Math.round(((base + rand(-8, 8)) * K * mul) / 1000) * 1000
         const cards = shuffle(poolFor(r.character))
-          .slice(0, 6)
+          .slice(0, 6 + mods.shopExtraCards)
           .map((d) => ({ id: d.id, price: price(d.rarity === 'rare' ? 140 : d.rarity === 'uncommon' ? 75 : 48), sold: false }))
-        const relics = shuffle(unownedCommon(r))
-          .slice(0, 2)
-          .map((id) => ({ id, price: Math.round(((140 + rand(0, 40)) * K * mul) / 1000) * 1000, sold: false }))
+        const offers: string[] = []
+        for (let i = 0; i < 3; i++) {
+          const id = rollRelic(r, 'shop', Math.random, offers)
+          if (id) offers.push(id)
+        }
+        const relics = offers.map((id) => ({ id, price: Math.round((relicPrice(id) * mul) / 1000) * 1000, sold: false }))
         recordCardsSeen(cards.map((c) => c.id))
         r = { ...r, stats: bump(r.stats, { shopsVisited: 1 }) }
         setScreen({ kind: 'shop', cards, relics, removeUsed: false })
@@ -358,12 +358,12 @@ export default function App() {
         endRun(r, true)
         return
       }
-      const mul = (r.relics.includes('stock_options') ? 0.5 : 1) * rewardTokenMul(r.reviewLevel)
+      const mul = (r.relics.includes('stock_options') ? 0.5 : 1) * rewardTokenMul(r.reviewLevel) * relicMods(r.relics).tokenMul
       const base = combat.kind === 'boss' ? 90 : combat.kind === 'elite' ? rand(28, 38) : rand(12, 22)
       const gold = Math.round((base * K * mul) / 1000) * 1000
-      const relic = combat.kind === 'elite' && unownedCommon(r).length ? pick(unownedCommon(r)) : null
-      const bossRelics = combat.kind === 'boss' ? shuffle(BOSS_RELICS.filter((id) => !r.relics.includes(id))).slice(0, 3) : null
-      const cards = rollCardRewards(cardRewardCount(r.reviewLevel) + (combat.kind !== 'normal' ? benefitExtraEliteCard() : 0), combat.kind !== 'normal', r.character)
+      const relic = combat.kind === 'elite' ? rollRelic(r, 'elite') : null
+      const bossRelics = combat.kind === 'boss' ? rollBossRelics(r, 3) : null
+      const cards = rollCardRewards(Math.max(1, cardRewardCount(r.reviewLevel) + (combat.kind !== 'normal' ? benefitExtraEliteCard() : 0) + relicMods(r.relics).cardChoice), combat.kind !== 'normal', r.character)
       recordCardsSeen(cards)
       setRun({ ...r, gold: r.gold + gold, stats: bump(r.stats, { tokensEarned: gold }) })
       setScreen({ kind: 'reward', gold, cards, relic, bossRelics })
@@ -452,7 +452,7 @@ export default function App() {
                   />
                 )}
                 {screen.kind === 'rest' && run && (
-                  <RestScreen run={run} used={!!screen.used} onUse={() => setScreen({ kind: 'rest', used: true })} setRun={setRun} onDone={backToMap} healPct={restHealPct(run.reviewLevel) + benefitRestBonus()} />
+                  <RestScreen run={run} used={!!screen.used} onUse={() => setScreen({ kind: 'rest', used: true })} setRun={setRun} onDone={backToMap} healPct={restHealPct(run.reviewLevel) + benefitRestBonus() + relicMods(run.relics).restBonus} />
                 )}
                 {screen.kind === 'shop' && run && (
                   <ShopScreen

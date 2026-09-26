@@ -103,11 +103,11 @@ const defs: EnemyDef[] = [
     id: 'boss_pc', name: 'Director of People & Culture', title: 'Boss', hp: [140, 140], tier: 'boss',
     bio: 'Runs a sub-3:30 marathon and your 1:1s. Loves you like family. Mandatory family.',
     moves: {
-      survey: { intent: () => ({ kind: 'debuff', label: 'Engagement Survey' }), act: (c) => { addStatus(c, 'player', 'weak', 2); addStatus(c, 'player', 'frail', 2) }, lines: ['Quick pulse survey! Only 94 questions.', 'On a scale of 1–10, how aligned do you feel?'] },
-      fun: { intent: () => A('Mandatory Fun', 4, 4), act: (c, e) => hits(c, e, 4, 4), lines: ['Trust fall! Everyone! Now!', 'This is a safe space. Mandatory, but safe.'] },
-      pip: { intent: () => ({ kind: 'attack_debuff', label: 'Performance Improvement Plan', damage: 10, hits: 1 }), act: (c, e) => { hits(c, e, 10); addCards(c, 'pip', 'discard', 2) }, lines: ["Let's circle back to your development goals.", 'I have booked 30 minutes. With your manager.'] },
-      crossfit: { intent: () => ({ kind: 'defend_buff', label: 'Morning CrossFit' }), act: (c, e) => { addStatus(c, e.uid, 'strength', 2); gainBlock(c, e.uid, 12) }, lines: ['I did 150 burpees before our 8am.', 'Wellness is a core value!'] },
-      offsite: { intent: () => ({ kind: 'heal', label: 'Team-Building Offsite' }), act: (c, e) => { heal(c, e.uid, 30); gainBlock(c, e.uid, 10); e.flags.offsite = 1 }, lines: ['Offsite in the Westfjords! Bring your feelings.'] },
+      survey: { intent: () => ({ kind: 'debuff', label: 'Engagement Survey' }), act: (c) => { addStatus(c, 'player', 'weak', 2); addStatus(c, 'player', 'frail', 2) }, lines: ['Quick pulse survey! Only 94 questions.', 'On a scale of 1–10, how aligned do you feel?', 'Habit 5: Seek first to understand… your survey answers.', 'Have you signed up for the 7 Habits workshop yet? It is voluntary. Mandatorily voluntary.'] },
+      fun: { intent: () => A('Mandatory Fun', 4, 4), act: (c, e) => hits(c, e, 4, 4), lines: ['Trust fall! Everyone! Now!', 'This is a safe space. Mandatory, but safe.', 'Habit 6: Synergize! That means you, too.', 'Day two of the 7 Habits workshop starts with icebreakers!'] },
+      pip: { intent: () => ({ kind: 'attack_debuff', label: 'Performance Improvement Plan', damage: 10, hits: 1 }), act: (c, e) => { hits(c, e, 10); addCards(c, 'pip', 'discard', 2) }, lines: ["Let's circle back to your development goals.", 'I have booked 30 minutes. With your manager.', 'Habit 2: Begin with the end in mind. Your end.', 'Your 7 Habits workshop certificate appears to be… missing.'] },
+      crossfit: { intent: () => ({ kind: 'defend_buff', label: 'Morning CrossFit' }), act: (c, e) => { addStatus(c, e.uid, 'strength', 2); gainBlock(c, e.uid, 12) }, lines: ['I did 150 burpees before our 8am.', 'Wellness is a core value!', 'Habit 7: Sharpen the saw. I sharpened mine at 5am.', 'Habit 1: Be proactive. I already was. Twice.'] },
+      offsite: { intent: () => ({ kind: 'heal', label: 'Team-Building Offsite' }), act: (c, e) => { heal(c, e.uid, 30); gainBlock(c, e.uid, 10); e.flags.offsite = 1 }, lines: ['Offsite in the Westfjords! Bring your feelings.', 'Offsite agenda: the 7 Habits workshop. All seven. Back to back.'] },
     },
     choose: (e) => {
       if (!e.flags.offsite && e.hp < e.maxHp * 0.5) return 'offsite'

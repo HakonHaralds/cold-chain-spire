@@ -20,7 +20,7 @@ export function saveable(screen: Screen, combat: Combat | null): boolean {
 
 export function writeSave(data: Omit<SaveData, 'version' | 'savedAt'>) {
   try {
-    const combat = data.combat ? { ...data.combat, floats: [], fx: [], speech: null, anim: {} } : null
+    const combat = data.combat ? { ...data.combat, floats: [], fx: [], cardFx: [], speech: null, anim: {} } : null
     localStorage.setItem(KEY, JSON.stringify({ ...data, combat, version: 1, savedAt: Date.now() }))
   } catch {
     /* storage full or blocked: the run just isn't persisted */

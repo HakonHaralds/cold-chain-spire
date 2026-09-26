@@ -1,7 +1,8 @@
 import { DEF, cardCost } from './cards'
-import { addCards, addStatus, cstats, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
+import { cardTrigger, relicEvents, addCards, addStatus, cstats, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
 import { ENEMY, intentOf, mkEnemy, speak } from './enemies'
 import { companionAct } from './companions'
+import { relicEnergy, relicsCardPlayed, relicsCombatEnd, runRelics } from './relics'
 import type { CardInst, Combat, Run, StatusId } from './types'
 import { emptyCombatStats, emptyRunStats } from './stats'
 import { applyReviewToEnemies } from '../meta/review'
@@ -17,7 +18,7 @@ export function startCombat(run: Run, enemyIds: string[], kind: Combat['kind']):
   const c: Combat = {
     player: { hp: run.hp, maxHp: run.maxHp, block: 0, statuses: {} },
     energy: 0,
-    maxEnergy: 3 + (run.relics.includes('espresso') ? 1 : 0) + (run.relics.includes('stock_options') ? 1 : 0) + (run.relics.includes('unlimited_pto') ? 1 : 0),
+    maxEnergy: 3 + (run.relics.includes('espresso') ? 1 : 0) + (run.relics.includes('stock_options') ? 1 : 0) + (run.relics.includes('unlimited_pto') ? 1 : 0) + relicEnergy(run.relics),
     enemies: enemyIds.map((id) => mkEnemy(id, run.act)),
     draw: shuffle(run.deck.map((d) => ({ ...d }))),
     hand: [],
@@ -39,6 +40,7 @@ export function startCombat(run: Run, enemyIds: string[], kind: Combat['kind']):
     stats: emptyCombatStats(),
     reviewLevel: run.reviewLevel ?? 0,
     companion: run.companion ?? null,
+    relicState: {},
   }
   if (run.relics.includes('energy_drink')) c.player.statuses.strength = 1
   applyReviewToEnemies(c)
@@ -50,6 +52,7 @@ export function startCombat(run: Run, enemyIds: string[], kind: Combat['kind']):
     e.move = ENEMY[e.defId].choose(e, c)
   }
   if (run.relics.includes('ref_thermometer')) for (const e of c.enemies) addStatus(c, e.uid, 'excursion', 2)
+  runRelics(c, 'onCombatStart')
   const boss = c.enemies.find((e) => ENEMY[e.defId].tier === 'boss')
   if (boss) speak(c, boss, boss.move)
   return beginPlayerTurn(c)
@@ -75,6 +78,7 @@ function beginPlayerTurn(c: Combat): Combat {
   let n = 5 + st(p, 'sprint') + (c.relics.includes('corner_office') ? 1 : 0)
   if (c.turn === 1 && c.relics.includes('standing_desk')) n += 2
   drawCards(c, n)
+  runRelics(c, 'onTurnStart')
   companionAct(c, 'start')
   checkEnd(c)
   return c
@@ -140,8 +144,10 @@ export function playCard(prev: Combat, cardUid: string, target: string | null): 
     if (d.exhaust?.(card.upgraded)) {
       c.exhaust.push(card)
       cs.cardsExhausted += 1
+      relicEvents.exhaust(c, 1, 0)
     } else c.discard.push(card)
   }
+  relicsCardPlayed(c, card)
   checkEnd(c)
   return c
 }
@@ -154,10 +160,20 @@ export function endPlayerTurn(prev: Combat): Combat {
   c.speech = null
   const p = c.player
   cstats(c).energyWasted += Math.max(0, c.energy)
+  runRelics(c, 'onTurnEnd')
   for (const card of c.hand) {
-    if (card.id === 'meeting') loseHp(c, 'player', 2)
-    if (card.id === 'pip') loseHp(c, 'player', 3)
-    if (card.id === 'malware') loseHp(c, 'player', 1)
+    if (card.id === 'meeting') {
+      cardTrigger(c, 'meeting', '−2 HP')
+      loseHp(c, 'player', 2)
+    }
+    if (card.id === 'pip') {
+      cardTrigger(c, 'pip', '−3 HP')
+      loseHp(c, 'player', 3)
+    }
+    if (card.id === 'malware') {
+      cardTrigger(c, 'malware', '−1 HP')
+      loseHp(c, 'player', 1)
+    }
   }
   if (c.relics.includes('jlink')) exhaustBugs(c, ['hand'], 1)
   if (st(p, 'watchdog')) {
@@ -175,6 +191,7 @@ export function endPlayerTurn(prev: Combat): Combat {
     if (DEF[card.id].ethereal) {
       c.exhaust.push(card)
       cstats(c).cardsExhausted += 1
+      relicEvents.exhaust(c, 1, 0)
     } else c.discard.push(card)
   }
   c.hand = []
@@ -192,7 +209,7 @@ export function enemyAct(prev: Combat, enemyUid: string): Combat {
   if (!e || e.dead || c.phase !== 'enemy') return prev
   e.block = 0
   if (st(e, 'excursion')) {
-    loseHp(c, e.uid, st(e, 'excursion'))
+    loseHp(c, e.uid, Math.round(st(e, 'excursion') * (c.relics.includes('cold_room_door') ? 1.5 : 1)))
     if (!st(c.player, 'hysteresis')) addStatus(c, e.uid, 'excursion', -1)
     if (e.dead) {
       cstats(c).excursionKills += 1
@@ -228,12 +245,15 @@ export function finishEnemyPhase(prev: Combat): Combat {
 export function applyCombatResult(run: Run, c: Combat): Run {
   let hp = c.player.hp
   if (hp > 0 && run.relics.includes('saga_card')) hp = Math.min(run.maxHp, hp + 6)
-  return {
-    ...run,
-    hp,
-    gold: Math.max(0, run.gold - c.goldStolen),
-    stats: foldStats(run, c),
-  }
+  return relicsCombatEnd(
+    {
+      ...run,
+      hp,
+      gold: Math.max(0, run.gold - c.goldStolen),
+      stats: foldStats(run, c),
+    },
+    c,
+  )
 }
 
 /** Fold one combat's counters into the run's lifetime stats. */

@@ -1,6 +1,6 @@
 import { DEF, poolFor } from './cards'
 import { mkCard, pick, shuffle } from './core'
-import { COMMON_RELICS, RELIC } from './relics'
+import { grantRelic, RELIC, rollRelic } from './relics'
 import { tokensText } from './tokens'
 import type { CharId, Run, RunStats } from './types'
 
@@ -19,8 +19,10 @@ export interface OkrDef {
   id: string
   icon: string
   title: string
-  /** Target per act (index act-1; act 4 reuses act 3). */
+  /** Target per act (index act-1). */
   targets: [number, number, number]
+  /** Act 4 is only a rest, a shop and Peter: its own target, or null if the OKR can't be done there. */
+  act4?: number | null
   desc: (target: number) => string
   /** Counter in RunStats measured since the OKR was chosen. */
   stat?: keyof RunStats
@@ -31,19 +33,19 @@ export interface OkrDef {
 }
 
 const defs: OkrDef[] = [
-  { id: 'flawless', icon: '🧊', title: 'Zero Excursions', targets: [2, 2, 3], stat: 'flawlessFights', desc: (t) => `Win ${t} fights without losing any HP.`, reward: () => ({ kind: 'rare' }) },
-  { id: 'elite_hunter', icon: '😈', title: 'Escalation Path', targets: [1, 2, 2], stat: 'elitesDefeated', desc: (t) => `Defeat ${t} elite${t > 1 ? 's' : ''}.`, reward: () => ({ kind: 'relic' }) },
-  { id: 'velocity', icon: '🏎️', title: 'Velocity', targets: [60, 80, 100], stat: 'cardsPlayed', desc: (t) => `Play ${t} cards.`, reward: (a) => ({ kind: 'tokens', amount: 50000 + 25000 * a }) },
-  { id: 'ship_it', icon: '🚀', title: 'Ship It', targets: [30, 40, 50], stat: 'attacks', desc: (t) => `Play ${t} Attacks.`, reward: () => ({ kind: 'upgrade', count: 2 }) },
-  { id: 'process', icon: '📋', title: 'Process Excellence', targets: [25, 35, 45], stat: 'skills', desc: (t) => `Play ${t} Skills.`, reward: () => ({ kind: 'maxHp', amount: 6 }) },
-  { id: 'platform', icon: '🏗️', title: 'Platform Thinking', targets: [2, 3, 4], stat: 'powers', desc: (t) => `Play ${t} Powers.`, reward: () => ({ kind: 'rare' }) },
-  { id: 'revenue', icon: '📈', title: 'Revenue Target', targets: [400, 600, 800], stat: 'damageDealt', desc: (t) => `Deal ${t} damage.`, reward: (a) => ({ kind: 'tokens', amount: 60000 + 30000 * a }) },
-  { id: 'headcount', icon: '✂️', title: 'Headcount Reduction', targets: [8, 10, 12], stat: 'enemiesDefeated', desc: (t) => `Defeat ${t} enemies.`, reward: () => ({ kind: 'maxHp', amount: 8 }) },
-  { id: 'cadence', icon: '📦', title: 'Delivery Cadence', targets: [4, 5, 5], stat: 'fights', desc: (t) => `Win ${t} fights.`, reward: (a) => ({ kind: 'tokens', amount: 40000 + 20000 * a }) },
-  { id: 'lean', icon: '🥗', title: 'Lean Deck', targets: [5, 7, 9], stat: 'cardsExhausted', desc: (t) => `Exhaust ${t} cards.`, reward: () => ({ kind: 'trim', count: 2 }) },
-  { id: 'discovery', icon: '🧭', title: 'Customer Discovery', targets: [2, 2, 3], stat: 'eventsVisited', desc: (t) => `Visit ${t} ❓ events.`, reward: (a) => ({ kind: 'tokens', amount: 40000 + 20000 * a }) },
-  { id: 'invest', icon: '💸', title: 'Invest in Growth', targets: [150000, 200000, 250000], stat: 'tokensSpent', desc: (t) => `Spend ${tokensText(t)}.`, reward: () => ({ kind: 'relic' }) },
-  { id: 'paydown', icon: '🧹', title: 'Tech Debt Paydown', targets: [1, 1, 2], stat: 'removals', desc: (t) => `Remove ${t} card${t > 1 ? 's' : ''} from your deck.`, reward: () => ({ kind: 'upgrade', count: 2 }) },
+  { id: 'flawless', icon: '🧊', title: 'Zero Excursions', act4: null, targets: [2, 2, 3], stat: 'flawlessFights', desc: (t) => `Win ${t} fights without losing any HP.`, reward: () => ({ kind: 'rare' }) },
+  { id: 'elite_hunter', icon: '😈', title: 'Escalation Path', act4: null, targets: [1, 2, 2], stat: 'elitesDefeated', desc: (t) => `Defeat ${t} elite${t > 1 ? 's' : ''}.`, reward: () => ({ kind: 'relic' }) },
+  { id: 'velocity', icon: '🏎️', title: 'Velocity', act4: 40, targets: [60, 80, 100], stat: 'cardsPlayed', desc: (t) => `Play ${t} cards.`, reward: (a) => ({ kind: 'tokens', amount: 50000 + 25000 * a }) },
+  { id: 'ship_it', icon: '🚀', title: 'Ship It', act4: 20, targets: [30, 40, 50], stat: 'attacks', desc: (t) => `Play ${t} Attacks.`, reward: () => ({ kind: 'upgrade', count: 2 }) },
+  { id: 'process', icon: '📋', title: 'Process Excellence', act4: 15, targets: [25, 35, 45], stat: 'skills', desc: (t) => `Play ${t} Skills.`, reward: () => ({ kind: 'maxHp', amount: 6 }) },
+  { id: 'platform', icon: '🏗️', title: 'Platform Thinking', act4: 3, targets: [2, 3, 4], stat: 'powers', desc: (t) => `Play ${t} Powers.`, reward: () => ({ kind: 'rare' }) },
+  { id: 'revenue', icon: '📈', title: 'Revenue Target', act4: 400, targets: [400, 600, 800], stat: 'damageDealt', desc: (t) => `Deal ${t} damage.`, reward: (a) => ({ kind: 'tokens', amount: 60000 + 30000 * a }) },
+  { id: 'headcount', icon: '✂️', title: 'Headcount Reduction', act4: null, targets: [8, 10, 12], stat: 'enemiesDefeated', desc: (t) => `Defeat ${t} enemies.`, reward: () => ({ kind: 'maxHp', amount: 8 }) },
+  { id: 'cadence', icon: '📦', title: 'Delivery Cadence', act4: null, targets: [4, 5, 5], stat: 'fights', desc: (t) => `Win ${t} fights.`, reward: (a) => ({ kind: 'tokens', amount: 40000 + 20000 * a }) },
+  { id: 'lean', icon: '🥗', title: 'Lean Deck', act4: 4, targets: [5, 7, 9], stat: 'cardsExhausted', desc: (t) => `Exhaust ${t} cards.`, reward: () => ({ kind: 'trim', count: 2 }) },
+  { id: 'discovery', icon: '🧭', title: 'Customer Discovery', act4: null, targets: [2, 2, 3], stat: 'eventsVisited', desc: (t) => `Visit ${t} ❓ events.`, reward: (a) => ({ kind: 'tokens', amount: 40000 + 20000 * a }) },
+  { id: 'invest', icon: '💸', title: 'Invest in Growth', act4: 120000, targets: [150000, 200000, 250000], stat: 'tokensSpent', desc: (t) => `Spend ${tokensText(t)}.`, reward: () => ({ kind: 'relic' }) },
+  { id: 'paydown', icon: '🧹', title: 'Tech Debt Paydown', act4: 1, targets: [1, 1, 2], stat: 'removals', desc: (t) => `Remove ${t} card${t > 1 ? 's' : ''} from your deck.`, reward: () => ({ kind: 'upgrade', count: 2 }) },
   {
     id: 'always_on',
     icon: '⚡',
@@ -53,13 +55,13 @@ const defs: OkrDef[] = [
     progress: (_run, d) => (d('bossesDefeated') >= 1 && d('rests') === 0 ? 1 : 0),
     reward: (a) => ({ kind: 'combo', amount: 25000 * a }),
   },
-  { id: 'bug_bash', icon: '🐛', title: 'Bug Bash', targets: [8, 12, 16], stat: 'bugsExhausted', desc: (t) => `Exhaust ${t} Bugs.`, reward: () => ({ kind: 'relic' }), cls: 'fw' },
-  { id: 'breach', icon: '🌡️', title: 'Cold Chain Breach', targets: [30, 45, 60], stat: 'excursionApplied', desc: (t) => `Apply ${t} Excursion to enemies.`, reward: () => ({ kind: 'rare' }), cls: 'cal' },
+  { id: 'bug_bash', icon: '🐛', title: 'Bug Bash', act4: 6, targets: [8, 12, 16], stat: 'bugsExhausted', desc: (t) => `Exhaust ${t} Bugs.`, reward: () => ({ kind: 'relic' }), cls: 'fw' },
+  { id: 'breach', icon: '🌡️', title: 'Cold Chain Breach', act4: 25, targets: [30, 45, 60], stat: 'excursionApplied', desc: (t) => `Apply ${t} Excursion to enemies.`, reward: () => ({ kind: 'rare' }), cls: 'cal' },
 ]
 
 export const OKRS: Record<string, OkrDef> = Object.fromEntries(defs.map((d) => [d.id, d]))
 
-const targetFor = (d: OkrDef, act: number) => d.targets[Math.min(3, Math.max(1, act)) - 1]
+const targetFor = (d: OkrDef, act: number) => (act >= 4 && d.act4 != null ? d.act4 : d.targets[Math.min(3, Math.max(1, act)) - 1])
 
 export function rewardText(r: Reward): string {
   switch (r.kind) {
@@ -88,8 +90,8 @@ export function describeOkr(id: string, act: number) {
 }
 
 /** Three options for the act, class-aware. */
-export function rollOkrs(_act: number, character: CharId): string[] {
-  const pool = defs.filter((d) => !d.cls || d.cls === character).map((d) => d.id)
+export function rollOkrs(act: number, character: CharId): string[] {
+  const pool = defs.filter((d) => (!d.cls || d.cls === character) && !(act >= 4 && d.act4 === null)).map((d) => d.id)
   return shuffle(pool).slice(0, 3)
 }
 
@@ -137,13 +139,10 @@ export function claimOkr(run: Run): { run: Run; rewardText: string } | null {
       break
     }
     case 'relic': {
-      const options = COMMON_RELICS.filter((x) => !r.relics.includes(x))
-      if (options.length) {
-        const id = pick(options)
-        r = { ...r, relics: [...r.relics, id] }
+      const id = rollRelic(r, 'elite')
+      if (id) {
+        r = grantRelic(r, id)
         text = `Relic: ${RELIC[id].name}`
-        if (id === 'lanyard') r = { ...r, maxHp: r.maxHp + 10, hp: r.hp + 10 }
-        if (id === 'kanelsnudur') r = { ...r, hp: Math.min(r.maxHp, r.hp + 20) }
       } else {
         r = { ...r, gold: r.gold + 100000 }
         text = `+${tokensText(100000)} (you own every relic)`

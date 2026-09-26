@@ -28,6 +28,8 @@ Performance Review level) and `npx tsx scripts/events-ev.ts` (expected value of 
   costs 1 less, but shuffles a Bug into your draw pile when played).
 - **OKRs:** choose one quarterly objective per act; it pays out the moment you hit it.
 - **Tokens:** the currency, in thousands (start with 99k).
+- **Relics:** 61 (common, uncommon, rare, boss, shop-only, plus class-specific ones), with drop odds and
+  prices by rarity. `MODE=relics npx tsx scripts/balance.ts` measures each relic's win-rate impact.
 - **Characters unlock by playing:** start as the Firmware Developer; beat the Act 1 boss with a character
   (or play 3 runs with them) to unlock the next one.
 - **Onboarding perks per character:** each win with a character unlocks the next perk on their ladder of 8.

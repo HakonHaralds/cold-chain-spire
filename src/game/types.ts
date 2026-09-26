@@ -178,6 +178,8 @@ export interface Combat {
   phase: 'player' | 'enemy' | 'won' | 'lost'
   floats: FloatText[]
   fx: Fx[]
+  /** Status/curse cards that just triggered (shown popping out of the hand). Optional for older saves. */
+  cardFx?: { id: number; cardId: string; text: string }[]
   shake: number // bumps on heavy hits → screen shake
   speech: Speech | null
   log: string[]
@@ -190,6 +192,8 @@ export interface Combat {
   stats: CombatStats
   reviewLevel: number
   companion: CompanionState | null
+  /** Per-combat relic counters (optional for older saves). */
+  relicState?: Record<string, number>
 }
 
 export type NodeType = 'combat' | 'elite' | 'rest' | 'shop' | 'event' | 'treasure' | 'boss'

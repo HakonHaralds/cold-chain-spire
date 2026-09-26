@@ -1,6 +1,6 @@
 import { DEF, poolFor } from './cards'
 import { mkCard, pick } from './core'
-import { COMMON_RELICS, RELIC } from './relics'
+import { grantRelic, RELIC, rollRelic } from './relics'
 import { tokensText } from './tokens'
 import type { Run } from './types'
 
@@ -48,12 +48,9 @@ const uncommon = (r: Run) => pick(poolFor(r.character).filter((d) => d.rarity ==
 
 /** A random relic you don't own (with pickup effects); falls back to tokens if you own them all. */
 function randomRelic(r: Run): { run: Run; name: string } {
-  const options = COMMON_RELICS.filter((id) => !r.relics.includes(id))
-  if (!options.length) return { run: earn(r, 100000), name: tokensText(100000) }
-  const id = pick(options)
-  let out: Run = { ...r, relics: [...r.relics, id], stats: { ...r.stats, relicsGained: r.stats.relicsGained + 1 } }
-  if (id === 'lanyard') out = maxHp(out, 10)
-  if (id === 'kanelsnudur') out = healR(out, 20)
+  const id = rollRelic(r, 'treasure')
+  if (!id) return { run: earn(r, 100000), name: tokensText(100000) }
+  const out: Run = grantRelic({ ...r, stats: { ...r.stats, relicsGained: r.stats.relicsGained + 1 } }, id)
   return { run: out, name: RELIC[id].name }
 }
 

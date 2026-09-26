@@ -772,7 +772,7 @@ function YesMan() {
 }
 
 function CEO() {
-  // Bald, glasses, grey stubbly beard, puffy vest. Insulated against feedback.
+  // Clean bald head, glasses, barely-there stubble, puffy vest. Insulated against feedback.
   return (
     <g transform="translate(-24,-24) scale(1.24)">
       <Person
@@ -785,10 +785,10 @@ function CEO() {
         eyes="normal"
         mouth="smile"
         brows="normal"
-        browColor="#6e6e6e"
+        browColor="#6b5444"
         glasses="square"
-        stubble="#9a9a9a"
-        hairFront={<g>{sideHair('#8f8f8f')}{baldShine}</g>}
+        stubble="#d4a585"
+        hairFront={baldShine}
         props={
           <g>
             <rect x="120" y="126" width="16" height="6" rx="2" fill="#5CD6CE" opacity="0.9" />

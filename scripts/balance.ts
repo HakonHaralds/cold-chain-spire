@@ -8,6 +8,7 @@ import { COMPANION_IDS } from '../src/game/companions'
 import { charge, livingEnemies, mkCard, pick, st } from '../src/game/core'
 import { applyPerk, PERK_LADDER } from '../src/meta/career'
 import { applyReviewStart } from '../src/meta/review'
+import { RELIC, grantRelic } from '../src/game/relics'
 import { emptyRunStats } from '../src/game/stats'
 import type { CharId, Combat, Run } from '../src/game/types'
 
@@ -23,6 +24,7 @@ interface Scenario {
   rewrite?: boolean
   review?: number
   perk?: boolean
+  relic?: string
 }
 
 function mkRun(ch: CharId, extra: number, act: number, s: Scenario): Run {
@@ -38,7 +40,9 @@ function mkRun(ch: CharId, extra: number, act: number, s: Scenario): Run {
     const up = Math.random() < 0.3
     deck.push({ ...mkCard(id, up), ...(up && s.rewrite && canRewrite(id) ? { rewrite: true } : {}) })
   }
-  const relics = [def.relic, ...(act >= 2 ? ['espresso', 'hoodie'] : []), ...(act >= 3 ? ['energy_drink', 'gdp_cert'] : []), ...(act >= 4 ? ['headphones', 'corner_office'] : [])]
+  // Relic mode measures each relic on top of the starter relic only (the usual act relic set would
+  // make relics like Espresso or Hoodie duplicates and hide their value).
+  const relics = process.env.MODE === 'relics' ? [def.relic] : [def.relic, ...(act >= 2 ? ['espresso', 'hoodie'] : []), ...(act >= 3 ? ['energy_drink', 'gdp_cert'] : []), ...(act >= 4 ? ['headphones', 'corner_office'] : [])]
   let run: Run = {
     character: ch, hp: def.hp, maxHp: def.hp, gold: 0, deck, relics, act,
     map: { nodes: {}, rows: 0, bossId: '' }, position: null, floor: 0, seenBosses: [],
@@ -48,6 +52,7 @@ function mkRun(ch: CharId, extra: number, act: number, s: Scenario): Run {
   }
   if (s.review) run = applyReviewStart(run)
   if (s.perk) run = applyPerk(run, PERK_LADDER[ch][0])
+  if (s.relic) run = grantRelic(run, s.relic)
   return run
 }
 
@@ -120,15 +125,43 @@ const rate = (ch: CharId, f: (typeof FIGHTS)[number], s: Scenario) => {
   return Math.round((100 * w) / N)
 }
 
-const results: Record<string, Record<string, Record<string, number>>> = {}
-for (const ch of CHARACTER_IDS) {
-  console.log(`\n=== ${CHARACTERS[ch].name} (win % per fight, N=${N}) ===`)
-  console.log('scenario'.padEnd(20) + FIGHTS.map((f) => f[0].padStart(16)).join('') + '     avg')
-  results[ch] = {}
-  for (const s of SCENARIOS) {
-    const row = FIGHTS.map((f) => rate(ch, f, s))
-    results[ch][s.name] = Object.fromEntries(FIGHTS.map((f, i) => [f[0], row[i]]))
-    const avg = Math.round(row.reduce((a, b) => a + b, 0) / row.length)
-    console.log(s.name.padEnd(20) + row.map((v) => `${v}%`.padStart(16)).join('') + `${avg}%`.padStart(8))
+if (process.env.MODE === 'relics') relicMode()
+else matrix()
+
+function relicMode() {
+  const fights = FIGHTS.filter((f) => ['P&C (A1)', 'Roche VP (A2e)', 'CTO (A2)', 'CEO (A3)', 'Peter (A4)'].includes(f[0]))
+  const avg = (ch: CharId, s: Scenario) => fights.reduce((a, f) => a + rate(ch, f, s), 0) / fights.length
+  const base: Record<string, number> = {}
+  for (const ch of CHARACTER_IDS) base[ch] = avg(ch, { name: 'baseline' })
+  console.log(`baseline avg win%: ${CHARACTER_IDS.map((c) => `${c} ${base[c].toFixed(1)}`).join(', ')}  (N=${N}, fights: ${fights.map((f) => f[0]).join(', ')})`)
+  const ids = (process.env.ONLY ? process.env.ONLY.split(',') : Object.keys(RELIC)).filter((id) => !['starter'].includes(RELIC[id].tier))
+  const rows: [string, string, string, number][] = []
+  for (const id of ids) {
+    const d = RELIC[id]
+    const chars = d.cls ? [d.cls] : CHARACTER_IDS
+    const delta = chars.reduce((a, ch) => a + avg(ch, { name: id, relic: id }) - base[ch], 0) / chars.length
+    rows.push([id, d.tier, d.cls ?? '-', delta])
+    console.log(`${id.padEnd(20)}${d.tier.padEnd(10)}${(d.cls ?? '-').padEnd(5)}${(delta >= 0 ? '+' : '') + delta.toFixed(1)}`)
   }
+  console.log('\nper tier (mean delta):')
+  for (const t of ['common', 'uncommon', 'rare', 'boss', 'shop']) {
+    const r = rows.filter((x) => x[1] === t)
+    if (r.length) console.log(`  ${t.padEnd(10)} ${(r.reduce((a, x) => a + x[3], 0) / r.length).toFixed(1)}  (n=${r.length})`)
+  }
+}
+
+function matrix() {
+const results: Record<string, Record<string, Record<string, number>>> = {}
+  for (const ch of CHARACTER_IDS) {
+    console.log(`\n=== ${CHARACTERS[ch].name} (win % per fight, N=${N}) ===`)
+    console.log('scenario'.padEnd(20) + FIGHTS.map((f) => f[0].padStart(16)).join('') + '     avg')
+    results[ch] = {}
+    for (const s of SCENARIOS) {
+      const row = FIGHTS.map((f) => rate(ch, f, s))
+      results[ch][s.name] = Object.fromEntries(FIGHTS.map((f, i) => [f[0], row[i]]))
+      const avg = Math.round(row.reduce((a, b) => a + b, 0) / row.length)
+      console.log(s.name.padEnd(20) + row.map((v) => `${v}%`.padStart(16)).join('') + `${avg}%`.padStart(8))
+    }
+  }
+  
 }
