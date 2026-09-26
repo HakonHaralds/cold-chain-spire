@@ -186,6 +186,7 @@ export function CombatScreen({
   const scale = useScale()
   const [hoverCard, setHoverCard] = useState<string | null>(null)
   const [hoverEnemy, setHoverEnemy] = useState<string | null>(null)
+  const [aim, setAim] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 
   const selectedCard = c.hand.find((h) => h.uid === selected) ?? null
   const targeting = !!selectedCard && DEF[selectedCard.id].target === 'enemy'
@@ -305,7 +306,23 @@ export function CombatScreen({
   const hasPlayable = c.hand.some((h) => canPlay(c, h))
 
   return (
-    <div className={`combat ${targeting ? 'is-targeting' : ''} ${screenShake ? 'screen-shake' : ''}`} onContextMenu={(e) => { e.preventDefault(); setSelected(null) }}>
+    <div
+      className={`combat ${targeting ? 'is-targeting' : ''} ${screenShake ? 'screen-shake' : ''}`}
+      onContextMenu={(e) => { e.preventDefault(); setSelected(null) }}
+      onMouseMove={(e) => {
+        if (!targeting) return aim && setAim(null)
+        // Targeting arrow from the selected card to the cursor, in the combat panel's local coordinates.
+        const box = e.currentTarget.getBoundingClientRect()
+        const card = e.currentTarget.querySelector('.hand-slot.sel .card')?.getBoundingClientRect()
+        if (!card) return
+        setAim({
+          x1: (card.left + card.width / 2 - box.left) / scale,
+          y1: (card.top - box.top) / scale,
+          x2: (e.clientX - box.left) / scale,
+          y2: (e.clientY - box.top) / scale,
+        })
+      }}
+    >
       <div className="battlefield">
         <div className="side player-side">
           <div className="fighter player">
@@ -340,6 +357,20 @@ export function CombatScreen({
         </div>
       </div>
 
+      {targeting && aim && (
+        <svg className="aim-arrow" aria-hidden>
+          <defs>
+            <marker id="aim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill={hoverEnemy ? '#ff5a5a' : '#ffd166'} />
+            </marker>
+          </defs>
+          <path
+            d={`M${aim.x1},${aim.y1} Q${(aim.x1 + aim.x2) / 2},${Math.min(aim.y1, aim.y2) - 120} ${aim.x2},${aim.y2}`}
+            className={hoverEnemy ? 'on-target' : ''}
+            markerEnd="url(#aim-head)"
+          />
+        </svg>
+      )}
       {targeting && <div className="target-hint">Choose a target · right-click or Esc to cancel</div>}
       {isPlayer && !intro && (
         <div key={`p${c.turn}`} className="turn-banner sweep">

@@ -20,6 +20,10 @@ interface Props {
   tips?: 'right' | 'left' | 'above' | 'none'
   /** Maps a base damage number to the final number (Strength, Weak, Vulnerable). */
   dmgMod?: (base: number) => number
+  /** Highlight numbers that changed versus the un-upgraded card. */
+  diff?: boolean
+  /** For un-upgraded cards, add a hover tip describing the upgraded version. */
+  showUpgrade?: boolean
 }
 
 /** Highlight "Deal N damage" numbers that are changed by modifiers: green if higher, red if lower. */
@@ -41,10 +45,18 @@ function withDamage(text: string, mod: (n: number) => number) {
   })
 }
 
+/** Highlight numbers that differ from the base (un-upgraded) text. */
+function withDiff(text: string, base: string) {
+  const a = text.split(/(\d+)/)
+  const b = base.split(/(\d+)/)
+  if (a.length < b.length) return text
+  return a.map((part, i) => (i % 2 === 1 && part !== b[i] ? <b key={i} className="dmg-up">{part}</b> : part))
+}
+
 const TYPE_LABEL: Record<string, string> = { attack: 'Attack', skill: 'Skill', power: 'Power', status: 'Status', curse: 'Curse' }
 const CLS_LABEL: Record<string, string> = { fw: 'Firmware', hw: 'Hardware', cal: 'Calibration' }
 
-export function Card({ id, upgraded = false, rewrite = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod }: Props) {
+export function Card({ id, upgraded = false, rewrite = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod, diff, showUpgrade }: Props) {
   const d = DEF[id]
   if (!d) return null
   const cost = cardCost(id, upgraded, rewrite)
@@ -75,11 +87,23 @@ export function Card({ id, upgraded = false, rewrite = false, playable = true, s
       <span className="card-type">
         {TYPE_LABEL[d.type]}
       </span>
-      <span className="card-text"><span>{dmgMod ? withDamage(text, dmgMod) : text}</span></span>
+      <span className="card-text"><span>{dmgMod ? withDamage(text, dmgMod) : diff && upgraded ? withDiff(text, d.text(false)) : text}</span></span>
       {d.flavor && !small && <span className="card-flavor">{d.flavor}</span>}
       {price !== undefined && <span className="card-price">{fmtTokens(price)}</span>}
-      {tips !== 'none' && kws.length > 0 && (
+      {tips !== 'none' && (kws.length > 0 || upgraded || showUpgrade) && (
         <span className={`card-tips tips-${tips}`} aria-hidden>
+          {upgraded && d.type !== 'status' && d.type !== 'curse' && (
+            <span className="card-tip card-tip-base">
+              <b>Before upgrade{d.cost >= 0 ? ` · cost ${d.cost}` : ''}</b>
+              {d.text(false)}
+            </span>
+          )}
+          {!upgraded && showUpgrade && d.type !== 'status' && d.type !== 'curse' && (
+            <span className="card-tip card-tip-up">
+              <b>When upgraded{cardCost(id, true) !== d.cost ? ` · cost ${cardCost(id, true)}` : ''}</b>
+              {d.text(true)}
+            </span>
+          )}
           {kws.map((k) => (
             <span key={k} className="card-tip">
               <b>{k}</b>

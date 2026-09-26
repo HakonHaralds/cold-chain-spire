@@ -11,11 +11,12 @@ interface Props {
   onClose?: () => void
   onPick?: (c: CardInst) => void
   filter?: (c: CardInst) => boolean
+  /** @deprecated cards now show their upgraded version in a hover tip instead */
   preview?: 'upgrade'
   sorted?: boolean
 }
 
-export function DeckModal({ title, cards, onClose, onPick, filter, preview, sorted = true }: Props) {
+export function DeckModal({ title, cards, onClose, onPick, filter, sorted = true }: Props) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose?.()
     window.addEventListener('keydown', k)
@@ -38,7 +39,7 @@ export function DeckModal({ title, cards, onClose, onPick, filter, preview, sort
         <div className="card-grid">
           {list.length === 0 && <p className="muted">Nothing here.</p>}
           {list.map((c) => (
-            <Card key={c.uid} id={c.id} upgraded={preview === 'upgrade' ? true : c.upgraded} rewrite={preview === 'upgrade' ? false : c.rewrite} small onClick={onPick ? () => onPick(c) : undefined} className={onPick ? 'pickable' : ''} />
+            <Card key={c.uid} id={c.id} upgraded={c.upgraded} rewrite={c.rewrite} small showUpgrade tips="right" onClick={onPick ? () => onPick(c) : undefined} className={onPick ? 'pickable' : ''} />
           ))}
         </div>
       </div>

@@ -38,6 +38,7 @@ import { Backdrop } from './ui/Backdrop'
 import { CharSelect, type RunOptions } from './ui/CharSelect'
 import { CombatScreen } from './ui/CombatScreen'
 import { CompanionSelect } from './ui/CompanionSelect'
+import { DeckChangeFx } from './ui/DeckChangeFx'
 import { DeckModal } from './ui/DeckModal'
 import { Gallery } from './ui/Gallery'
 import { GameMenu } from './ui/GameMenu'
@@ -489,6 +490,7 @@ export default function App() {
                 {screen.kind === 'victory' && run && hero && <VictoryScreen run={run} portrait={hero.portrait} onRestart={start} summary={summaryNode} />}
               </div>
             </main>
+            <DeckChangeFx run={screen.kind === 'combat' ? null : run} />
             {showDeck && run && <DeckModal title="Your deck" cards={run.deck} onClose={() => setShowDeck(false)} />}
             {menu && <GameMenu canSave={saveable(screen, combat)} onResume={() => setMenu(false)} onSaveQuit={toTitle} onAbandon={abandon} />}
           </div>

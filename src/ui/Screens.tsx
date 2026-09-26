@@ -431,15 +431,21 @@ function UpgradeChoice({ card, onPick, onCancel }: { card: CardInst; onPick: (re
           </button>
         </header>
         <div className="upgrade-choice">
+          <div className="upgrade-option current">
+            <h3>Current</h3>
+            <p>What the card does today.</p>
+            <Card id={card.id} tips="none" playable />
+          </div>
+          <div className="upgrade-arrow" aria-hidden>➜</div>
           <div className="upgrade-option">
             <h3>🛠️ Refactor</h3>
             <p>The clean upgrade. Better numbers, no side effects.</p>
-            <Card id={card.id} upgraded onClick={() => onPick(false)} className="pickable" tips="left" />
+            <Card id={card.id} upgraded diff onClick={() => onPick(false)} className="pickable" tips="none" />
           </div>
           <div className={`upgrade-option ${rewriteOk ? '' : 'disabled'}`}>
             <h3>⚡ Rewrite</h3>
             <p>{rewriteOk ? 'Upgraded and costs 1 less, but every play ships a Bug into your draw pile.' : 'Already free to play: nothing to rewrite.'}</p>
-            <Card id={card.id} upgraded rewrite={rewriteOk} playable={rewriteOk} onClick={rewriteOk ? () => onPick(true) : undefined} className={rewriteOk ? 'pickable' : ''} tips="right" />
+            <Card id={card.id} upgraded diff rewrite={rewriteOk} playable={rewriteOk} onClick={rewriteOk ? () => onPick(true) : undefined} className={rewriteOk ? 'pickable' : ''} tips="none" />
           </div>
         </div>
       </div>

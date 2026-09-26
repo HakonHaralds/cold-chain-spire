@@ -2515,3 +2515,166 @@ kbd {
   letter-spacing: 1px;
   color: var(--ct-teal);
 }
+
+
+/* ---------- targeting: keep the selected card small, draw an arrow ---------- */
+.is-targeting .hand-slot.sel .card,
+.is-targeting .hand-slot.sel:hover .card {
+  transform: translateY(-34px) scale(1.08);
+}
+.is-targeting .hand-slot.sel .card-tips,
+.is-targeting .hand-slot:not(.sel):hover .card-tips {
+  display: none;
+}
+.is-targeting .hand-slot:not(.sel):hover .card {
+  transform: translateY(-20px) scale(1.05);
+}
+.aim-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+  overflow: visible;
+}
+.aim-arrow path {
+  fill: none;
+  stroke: #ffd166;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 2 14;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.8));
+  animation: aimMarch 0.5s linear infinite;
+}
+.aim-arrow path.on-target {
+  stroke: #ff5a5a;
+  filter: drop-shadow(0 0 8px rgba(255, 60, 60, 0.9));
+}
+@keyframes aimMarch {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+/* ---------- upgrade comparison ---------- */
+.upgrade-arrow {
+  align-self: center;
+  font-size: 40px;
+  color: var(--ct-teal);
+  animation: bob 1.4s ease-in-out infinite;
+}
+.upgrade-option.current {
+  opacity: 0.85;
+}
+.card-tip-base b {
+  color: #9fb2c6 !important;
+}
+.card-tip-up b {
+  color: #6dff9e !important;
+}
+
+/* ---------- deck change animation ---------- */
+.deckfx {
+  position: absolute;
+  inset: 0;
+  z-index: 180;
+  pointer-events: none;
+}
+.deckfx-item {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  translate: calc(-50% + var(--i) * 190px) -50%;
+  animation: deckfxLife 2300ms cubic-bezier(0.3, 0.8, 0.4, 1) both;
+}
+.deckfx-label {
+  padding: 4px 14px;
+  border-radius: 14px;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(0, 20, 38, 0.92);
+  border: 1px solid var(--ct-teal);
+  color: var(--ct-teal);
+  box-shadow: 0 0 18px rgba(92, 214, 206, 0.45);
+}
+.deckfx-item .card {
+  pointer-events: none;
+  box-shadow: 0 0 0 3px var(--ct-teal), 0 0 40px rgba(92, 214, 206, 0.7), 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+.deckfx-upgrade .deckfx-label {
+  color: #6dff9e;
+  border-color: #6dff9e;
+}
+.deckfx-upgrade .card {
+  box-shadow: 0 0 0 3px #6dff9e, 0 0 40px rgba(109, 255, 158, 0.6);
+}
+.deckfx-remove .deckfx-label {
+  color: #ff8f8f;
+  border-color: #ff5a5a;
+}
+.deckfx-remove {
+  animation-name: deckfxBurn;
+}
+.deckfx-relic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 220px;
+  padding: 16px;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(8, 20, 36, 0.95);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 30px rgba(242, 194, 48, 0.5);
+}
+.deckfx-relic .relic-big {
+  font-size: 56px;
+}
+.deckfx-relic-label,
+.deckfx-relic .deckfx-label {
+  color: var(--gold);
+}
+@keyframes deckfxLife {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-8deg);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  22%,
+  62% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.12) rotate(12deg);
+  }
+}
+@keyframes deckfxBurn {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  15%,
+  55% {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.9);
+    filter: brightness(2.5) sepia(1) hue-rotate(-30deg) blur(6px);
+  }
+}
