@@ -1,0 +1,294 @@
+/* Styles for the RUN features: companions, Rewrite upgrades, OKRs, tokens. */
+
+/* ---------- Rewrite variant ---------- */
+.card-cost.rw {
+  background: radial-gradient(circle at 35% 30%, #ffe2c2, #ff9a3c 45%, #b8560b);
+}
+.card-name.rw {
+  color: #ffb870;
+}
+.card-ribbon {
+  position: absolute;
+  top: 34px;
+  right: -8px;
+  z-index: 3;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #1a0d00;
+  background: linear-gradient(#ffb870, #ff8a1a);
+  border: 1px solid #7a3a00;
+  border-radius: 3px;
+  transform: rotate(8deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.card.is-rewrite {
+  border-color: #ff9a3c;
+}
+
+.upgrade-choice {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 20px 30px;
+}
+.upgrade-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 220px;
+  text-align: center;
+}
+.upgrade-option h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.upgrade-option p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 34px;
+}
+.upgrade-option .card {
+  --w: 170px;
+}
+.upgrade-option.disabled {
+  opacity: 0.45;
+}
+
+/* ---------- Companion in combat ---------- */
+.player-side {
+  position: relative;
+  gap: 4px;
+}
+.fighter.companion {
+  align-self: flex-end;
+  margin-bottom: 64px;
+  cursor: help;
+}
+.companion-sprite {
+  animation-delay: -0.7s;
+}
+.companion-sprite .portrait {
+  display: block;
+}
+.fighter.companion .speech {
+  top: -30px;
+}
+.fighter.companion .floats {
+  top: 20%;
+}
+.companion-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  text-shadow: 0 1px 2px #000;
+}
+.pips {
+  display: flex;
+  gap: 3px;
+  margin-top: 2px;
+}
+.pips i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.pips i.on {
+  background: var(--gold, #f2c230);
+  box-shadow: 0 0 6px var(--gold, #f2c230);
+}
+.companion-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 16px;
+  background: #0b1a2c;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  z-index: 30;
+}
+.fighter.companion:hover .companion-tip,
+.fighter.companion:focus .companion-tip {
+  display: flex;
+}
+.wag {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  animation: wag 0.5s ease-in-out infinite alternate;
+}
+@keyframes wag {
+  to {
+    transform: rotate(18deg);
+  }
+}
+
+/* ---------- Companion select ---------- */
+.comp-slot {
+  width: 300px;
+  gap: 4px;
+}
+.comp-bio {
+  position: relative;
+  font-size: 12px;
+  font-style: italic;
+  color: #c9d8e6;
+  margin: 4px 0;
+}
+.comp-levels {
+  position: relative;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  text-align: left;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.comp-levels .lvl {
+  display: inline-block;
+  min-width: 32px;
+  font-weight: 900;
+  color: var(--gold, #f2c230);
+}
+.comp-locked {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.comp-locked-item {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+/* ---------- OKRs ---------- */
+.okr-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+}
+.okr-screen h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+}
+.okr-options {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.okr-card {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  text-align: left;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(160deg, rgba(0, 56, 101, 0.9), rgba(6, 18, 34, 0.95));
+  cursor: pointer;
+  animation: rise 450ms ease-out both;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.okr-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--ct-teal, #5cd6ce);
+  box-shadow: 0 0 24px rgba(92, 214, 206, 0.35);
+}
+.okr-card .okr-icon {
+  font-size: 40px;
+}
+.okr-card h3 {
+  margin: 0;
+  font-size: 19px;
+}
+.okr-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #d4e2ee;
+}
+.okr-reward {
+  margin-top: auto;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold, #f2c230);
+  background: rgba(242, 194, 48, 0.1);
+  border: 1px solid rgba(242, 194, 48, 0.4);
+}
+
+.okr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  position: relative;
+  cursor: help;
+}
+.okr-chip .okr-bar {
+  width: 70px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.okr-chip .okr-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #5cd6ce, #3ecf8e);
+  transition: width 400ms ease;
+}
+.okr-chip.done {
+  border-color: var(--gold, #f2c230);
+  color: var(--gold, #f2c230);
+  animation: okrGlow 1.4s ease-in-out infinite;
+}
+.okr-chip.done .okr-bar i {
+  background: linear-gradient(90deg, #f2c230, #ffe08a);
+}
+.okr-chip.claimed {
+  opacity: 0.6;
+}
+.okr-chip .tip {
+  width: 260px;
+}
+.okr-chip:hover .tip,
+.okr-chip:focus .tip {
+  display: block;
+}
+@keyframes okrGlow {
+  50% {
+    box-shadow: 0 0 16px rgba(242, 194, 48, 0.7);
+  }
+}

@@ -15,8 +15,24 @@ Characters: **Firmware Developer** (Bugs: generate them, then exhaust them for p
 (Charge: build it up, then discharge it) and **Calibration Specialist** (Excursion: damage over time plus payoffs).
 The first run shows a short click-away tutorial per screen; "Replay tutorial" on the title screen resets it.
 
-Dev shortcuts: `?gallery` shows every character; `?fight=boss_cto&act=2&char=hw` jumps straight into a fight.
+Dev shortcuts: `?gallery` shows every character; `?fight=boss_cto&act=2&char=hw&comp=office_dog` jumps
+straight into a fight; `?setting=wroclaw` previews a backdrop.
 Balance check: `npx tsx scripts/simulate.ts` (greedy bot vs every elite and boss).
+
+## Systems
+
+- **Companions:** pick a work buddy at the start of a run (Intern, Rubber Duck, Friendly QA, IT Guy,
+  Office Dog, Summer Student). They act every turn and level up after each boss.
+- **Branching upgrades:** at the coffee machine, *Refactor* (normal upgrade) or *Rewrite* (upgraded,
+  costs 1 less, but shuffles a Bug into your draw pile when played).
+- **OKRs:** choose one quarterly objective per act; it pays out the moment you hit it.
+- **Tokens:** the currency, in thousands (start with 99k).
+- **Career ladder:** XP from every run unlocks titles, companions and onboarding perks.
+- **Performance Reviews:** 10 stacking difficulty levels, unlocked by career level 3 or your first win.
+- **Achievements:** 81, with an unlock banner; browse them in the Compendium along with enemies
+  (and their heard quotes), cards and relics.
+- **Settings:** each act rolls one of two real locations: M2 or M4, S3 or Wrocław, LogiPharma or
+  LOV Week, then the Saltpeter Mine. Some events only happen in specific places.
 
 ## Deploy
 

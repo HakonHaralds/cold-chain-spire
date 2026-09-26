@@ -139,7 +139,7 @@ const defs: EnemyDef[] = [
     id: 'procurement', name: 'Procurement Officer', hp: [30, 35], tier: 'normal',
     bio: 'Has a spreadsheet that proves you are overpriced.',
     moves: {
-      haggle: { intent: () => A('Aggressive Haggling', 8), act: (c, e) => { hits(c, e, 8); c.goldStolen += 12 }, lines: ['We need 40% off. Minimum.', 'Your competitor is cheaper.'] },
+      haggle: { intent: () => A('Aggressive Haggling', 8), act: (c, e) => { hits(c, e, 8); c.goldStolen += 12000 }, lines: ['We need 40% off. Minimum.', 'Your competitor is cheaper.'] },
       budget: { intent: () => ({ kind: 'debuff', label: 'Budget Cut' }), act: (c) => { addStatus(c, 'player', 'weak', 2) } },
     },
     choose: (e) => weighted(e, [['haggle', 65], ['budget', 35]]),

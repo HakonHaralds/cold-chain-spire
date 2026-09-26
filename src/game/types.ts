@@ -43,6 +43,75 @@ export interface CardInst {
   uid: string
   id: string
   upgraded: boolean
+  /** Branching upgrade (M8): "Rewrite" = upgraded, costs 1 less, shuffles a Bug into your draw pile when played. */
+  rewrite?: boolean
+}
+
+/** Per-combat counters (updated by the engine; read by achievements and OKRs). */
+export interface CombatStats {
+  damageTaken: number // HP lost by the player
+  maxHit: number // biggest single hit dealt by the player (HP + block removed)
+  maxBlock: number // most Block held at once
+  blockGained: number
+  cardsPlayed: number
+  attacks: number
+  skills: number
+  powers: number
+  cardsThisTurn: number
+  maxCardsInTurn: number
+  excursionApplied: number // total Excursion stacks applied to enemies
+  excursionKills: number // enemies killed by Excursion ticks
+  bugsExhausted: number
+  maxCharge: number
+  healed: number
+  cardsExhausted: number
+  energyWasted: number // unspent energy at end of turn, summed
+}
+
+/** Run-long counters (combat stats are folded in at the end of each fight). */
+export interface RunStats {
+  enemiesDefeated: number
+  cardsPlayed: number
+  damageDealt: number
+  fights: number
+  elitesDefeated: number
+  bossesDefeated: number
+  flawlessFights: number // fights won without losing HP
+  damageTaken: number
+  attacks: number
+  skills: number
+  powers: number
+  maxHit: number
+  maxBlock: number
+  maxCardsInTurn: number
+  excursionApplied: number
+  excursionKills: number
+  bugsExhausted: number
+  maxCharge: number
+  healed: number
+  cardsExhausted: number
+  tokensEarned: number
+  tokensSpent: number
+  eventsVisited: number
+  rests: number
+  upgrades: number
+  removals: number
+  cardsAdded: number
+  relicsGained: number
+  shopsVisited: number
+  fastestFight: number // fewest turns to win a fight (0 = none yet)
+}
+
+export interface CompanionState {
+  id: string
+  level: number // 1..3
+}
+
+export interface OkrState {
+  id: string
+  act: number
+  baseline: RunStats // run.stats snapshot when the OKR was chosen
+  done: boolean
 }
 
 export type IntentKind =
@@ -118,6 +187,9 @@ export interface Combat {
   goldStolen: number
   kind: 'normal' | 'elite' | 'boss'
   relics: string[]
+  stats: CombatStats
+  reviewLevel: number
+  companion: CompanionState | null
 }
 
 export type NodeType = 'combat' | 'elite' | 'rest' | 'shop' | 'event' | 'treasure' | 'boss'
@@ -148,6 +220,10 @@ export type Screen =
   | { kind: 'gameover' }
   | { kind: 'victory' }
   | { kind: 'charselect' }
+  | { kind: 'companionselect' }
+  | { kind: 'okrselect'; options: string[] }
+  | { kind: 'career' }
+  | { kind: 'compendium' }
 
 export type CharId = 'fw' | 'hw' | 'cal'
 
@@ -155,7 +231,7 @@ export interface Run {
   character: CharId
   hp: number
   maxHp: number
-  gold: number
+  gold: number // displayed as "tokens" (values are in full units, e.g. 25000)
   deck: CardInst[]
   relics: string[]
   act: number
@@ -163,5 +239,10 @@ export interface Run {
   position: string | null
   floor: number
   seenBosses: string[]
-  stats: { enemiesDefeated: number; cardsPlayed: number; damageDealt: number }
+  stats: RunStats
+  settings: string[] // setting id per act (index act-1), e.g. ['m2', 's3', 'logipharma', 'mine']
+  companion: CompanionState | null
+  okr: OkrState | null
+  reviewLevel: number // Performance Review level (M22), 0 = off
+  startedAt: number
 }

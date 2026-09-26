@@ -853,9 +853,17 @@ const defs: CardDef[] = [
 export const DEF: Record<string, CardDef> = Object.fromEntries(defs.map((d) => [d.id, d]))
 export const ALL_CARDS = defs
 
-export const cardCost = (id: string, up: boolean) => {
+export const cardCost = (id: string, up: boolean, rewrite = false) => {
   const d = DEF[id]
-  return up && d.costUp !== undefined ? d.costUp : d.cost
+  const base = up && d.costUp !== undefined ? d.costUp : d.cost
+  return rewrite && base > 0 ? base - 1 : base
+}
+
+/** Branching upgrade (M8): a Rewrite costs 1 less but shuffles a Bug into your draw pile. Only for playable cards that still cost something. */
+export const canRewrite = (id: string) => {
+  const d = DEF[id]
+  if (!d || d.unplayable || d.type === 'status' || d.type === 'curse') return false
+  return cardCost(id, true) > 0
 }
 
 const REWARDABLE: Rarity[] = ['common', 'uncommon', 'rare']

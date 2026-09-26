@@ -1,8 +1,12 @@
 import { DEF, KEYWORDS, cardCost, keywordsIn } from '../game/cards'
+import { fmtTokens } from '../game/tokens'
+import './run.css'
 
 interface Props {
   id: string
   upgraded?: boolean
+  /** Rewrite variant of the upgrade: costs 1 less, ships a Bug. */
+  rewrite?: boolean
   playable?: boolean
   selected?: boolean
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
@@ -40,26 +44,27 @@ function withDamage(text: string, mod: (n: number) => number) {
 const TYPE_LABEL: Record<string, string> = { attack: 'Attack', skill: 'Skill', power: 'Power', status: 'Status', curse: 'Curse' }
 const CLS_LABEL: Record<string, string> = { fw: 'Firmware', hw: 'Hardware', cal: 'Calibration' }
 
-export function Card({ id, upgraded = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod }: Props) {
+export function Card({ id, upgraded = false, rewrite = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod }: Props) {
   const d = DEF[id]
   if (!d) return null
-  const cost = cardCost(id, upgraded)
-  const text = d.text(upgraded)
+  const cost = cardCost(id, upgraded, rewrite)
+  const text = d.text(upgraded) + (rewrite ? ' Shuffle a Bug into your draw pile.' : '')
   const kws = [...keywordsIn(text), ...(d.exhaust?.(upgraded) && !/Exhaust/.test(text) ? ['Exhaust'] : [])]
   return (
     <button
       type="button"
       data-uid={uid}
-      className={`card card-${d.type} rarity-${d.rarity} cls-${d.cls} ${small ? 'card-small' : ''} ${selected ? 'selected' : ''} ${playable ? '' : 'unplayable'} ${className}`}
+      className={`card card-${d.type} rarity-${d.rarity} cls-${d.cls} ${rewrite ? 'is-rewrite' : ''} ${small ? 'card-small' : ''} ${selected ? 'selected' : ''} ${playable ? '' : 'unplayable'} ${className}`}
       onClick={onClick}
       style={style}
       title={CLS_LABEL[d.cls] ? `${CLS_LABEL[d.cls]} card` : undefined}
-      aria-label={`${d.name}${upgraded ? ' upgraded' : ''}, cost ${cost}. ${text}`}
+      aria-label={`${d.name}${rewrite ? ' rewritten' : upgraded ? ' upgraded' : ''}, cost ${cost}. ${text}`}
     >
       <span className="card-shine" aria-hidden />
-      {cost >= 0 && <span className={`card-cost ${upgraded && d.costUp !== undefined ? 'up' : ''}`}>{cost}</span>}
+      {cost >= 0 && <span className={`card-cost ${rewrite ? 'rw' : upgraded && d.costUp !== undefined ? 'up' : ''}`}>{cost}</span>}
+      {rewrite && <span className="card-ribbon">REWRITE</span>}
       {hotkey !== undefined && <span className="card-hotkey">{hotkey}</span>}
-      <span className={`card-name ${upgraded ? 'up' : ''}`}>
+      <span className={`card-name ${rewrite ? 'rw' : upgraded ? 'up' : ''}`}>
         {d.name}
         {upgraded ? '+' : ''}
       </span>
@@ -72,7 +77,7 @@ export function Card({ id, upgraded = false, playable = true, selected, onClick,
       </span>
       <span className="card-text"><span>{dmgMod ? withDamage(text, dmgMod) : text}</span></span>
       {d.flavor && !small && <span className="card-flavor">{d.flavor}</span>}
-      {price !== undefined && <span className="card-price">🪙 {price}</span>}
+      {price !== undefined && <span className="card-price">{fmtTokens(price)}</span>}
       {tips !== 'none' && kws.length > 0 && (
         <span className={`card-tips tips-${tips}`} aria-hidden>
           {kws.map((k) => (

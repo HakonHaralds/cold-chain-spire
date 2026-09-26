@@ -1,5 +1,7 @@
-import { ACT_NAMES } from '../game/map'
+import { currentSetting } from '../game/map'
 import { RELIC } from '../game/relics'
+import { fmtTokens } from '../game/tokens'
+import { OkrChip } from './OkrChip'
 import type { Combat, Run } from '../game/types'
 
 export function TopBar({ run, combat, onDeck, onMenu }: { run: Run; combat: Combat | null; onDeck: () => void; onMenu: () => void }) {
@@ -11,11 +13,12 @@ export function TopBar({ run, combat, onDeck, onMenu }: { run: Run; combat: Comb
         <span className="tb-stat hp" title="Health">
           ❤️ {hp}/{maxHp}
         </span>
-        <span className="tb-stat gold" title="Gold">
-          🪙 {run.gold - (combat?.goldStolen ?? 0)}
+        <span className="tb-stat gold" title="Tokens">
+          {fmtTokens(run.gold - (combat?.goldStolen ?? 0))}
         </span>
+        <OkrChip run={run} />
         <span className="tb-act">
-          Act {run.act}: {ACT_NAMES[run.act].name} · Floor {run.floor}
+          Act {run.act}: {currentSetting(run).name} · Floor {run.floor}
         </span>
       </div>
       <div className="tb-relics">

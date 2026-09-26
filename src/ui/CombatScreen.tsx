@@ -8,6 +8,7 @@ import type { CardInst, Combat, EnemyInst, Fighter, IntentKind, StatusId } from 
 import { Card } from './Card'
 import { DeckModal } from './DeckModal'
 import { FxLayer } from './Fx'
+import { CompanionView } from './CompanionView'
 import { useScale } from './scale'
 
 const INTENT_ICON: Record<IntentKind, string> = {
@@ -322,6 +323,7 @@ export function CombatScreen({
               <Statuses f={c.player} />
             </div>
           </div>
+          <CompanionView c={c} />
         </div>
         <div className="side enemy-side">
           {c.enemies.map((e) => (
@@ -400,6 +402,7 @@ export function CombatScreen({
                   uid={card.uid}
                   id={card.id}
                   upgraded={card.upgraded}
+                  rewrite={card.rewrite}
                   playable={isPlayer && canPlay(c, card)}
                   selected={selected === card.uid}
                   onClick={() => clickCard(card)}
@@ -437,7 +440,7 @@ export function CombatScreen({
             transitionDuration: `${FLY_MS}ms`,
           }}
         >
-          <Card id={flying.card.id} upgraded={flying.card.upgraded} tips="none" />
+          <Card id={flying.card.id} upgraded={flying.card.upgraded} rewrite={flying.card.rewrite} tips="none" />
         </div>
       )}
 

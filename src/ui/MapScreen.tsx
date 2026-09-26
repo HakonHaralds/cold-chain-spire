@@ -1,5 +1,5 @@
 import { ENCOUNTERS, ENEMY } from '../game/enemies'
-import { ACT_NAMES } from '../game/map'
+import { currentSetting } from '../game/map'
 import type { MapNode, NodeType, Run } from '../game/types'
 import { Portrait } from '../art/Portraits'
 
@@ -16,7 +16,7 @@ export function MapScreen({ run, onEnter }: { run: Run; onEnter: (n: MapNode) =>
   const current = run.position ? nodes[run.position] : null
   const available = new Set(current ? current.next : Object.values(nodes).filter((n) => n.row === 0).map((n) => n.id))
   const boss = ENEMY[ENCOUNTERS[run.act].boss]
-  const act = ACT_NAMES[run.act]
+  const act = currentSetting(run)
 
   return (
     <div className="map-screen">

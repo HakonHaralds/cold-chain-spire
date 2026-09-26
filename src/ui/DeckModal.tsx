@@ -38,7 +38,7 @@ export function DeckModal({ title, cards, onClose, onPick, filter, preview, sort
         <div className="card-grid">
           {list.length === 0 && <p className="muted">Nothing here.</p>}
           {list.map((c) => (
-            <Card key={c.uid} id={c.id} upgraded={preview === 'upgrade' ? true : c.upgraded} small onClick={onPick ? () => onPick(c) : undefined} className={onPick ? 'pickable' : ''} />
+            <Card key={c.uid} id={c.id} upgraded={preview === 'upgrade' ? true : c.upgraded} rewrite={preview === 'upgrade' ? false : c.rewrite} small onClick={onPick ? () => onPick(c) : undefined} className={onPick ? 'pickable' : ''} />
           ))}
         </div>
       </div>

@@ -60,9 +60,45 @@ function finalMap(): ActMap {
   return { nodes, rows: 3, bossId: 'boss' }
 }
 
-export const ACT_NAMES: Record<number, { name: string; sub: string }> = {
-  1: { name: 'The Warehouse', sub: 'Pallets, forklifts and legacy loggers' },
-  2: { name: 'The Open Office', sub: 'Where focus goes to die' },
-  3: { name: 'The Boardroom', sub: 'Mahogany, vests and vision' },
-  4: { name: 'The Saltpeter Mine', sub: 'Deep below. Something guards the nitrate.' },
+export interface SettingInfo {
+  id: string
+  act: number
+  name: string
+  sub: string
+  place: string
 }
+
+/** Each act rolls one of its settings per run (Run.settings[act - 1]). */
+export const SETTINGS: Record<string, SettingInfo> = {
+  m2: { id: 'm2', act: 1, name: 'M2: The Logger Warehouse', sub: 'Pallets, forklifts and forty thousand loggers waiting to ship', place: 'Kópavogur' },
+  m4: { id: 'm4', act: 1, name: 'M4: Production', sub: 'Pick-and-place, reflow ovens and a very strict ESD policy', place: 'Kópavogur' },
+  s3: { id: 's3', act: 2, name: 'S3: The Tower', sub: 'Open-plan floors with a view of Esja and too many meetings', place: 'Kópavogur' },
+  wroclaw: { id: 'wroclaw', act: 2, name: 'The Wrocław Office', sub: 'Old-town views, pierogi Fridays and suspicious dwarves', place: 'Wrocław' },
+  logipharma: { id: 'logipharma', act: 3, name: 'LogiPharma', sub: 'Booths, badge scanners and a free tote bag for every regret', place: 'The convention' },
+  lov: { id: 'lov', act: 3, name: 'LOV Week', sub: 'A banquet hall, round tables and slide 1 of 214', place: 'The banquet hall' },
+  mine: { id: 'mine', act: 4, name: 'The Saltpeter Mine', sub: 'Deep below. Something guards the nitrate.', place: 'Underground' },
+}
+
+const BY_ACT: Record<number, string[]> = { 1: ['m2', 'm4'], 2: ['s3', 'wroclaw'], 3: ['logipharma', 'lov'], 4: ['mine'] }
+export const DEFAULT_SETTINGS = ['m2', 's3', 'logipharma', 'mine']
+
+export function rollSettings(): string[] {
+  return [1, 2, 3, 4].map((act) => {
+    const opts = BY_ACT[act]
+    return opts[Math.floor(Math.random() * opts.length)]
+  })
+}
+
+export function settingInfo(id: string | undefined): SettingInfo {
+  return (id && SETTINGS[id]) || SETTINGS.m2
+}
+
+/** The setting for the run's current act (falls back to the default for older saves). */
+export function currentSetting(run: { act: number; settings?: string[] }): SettingInfo {
+  return settingInfo(run.settings?.[run.act - 1] ?? DEFAULT_SETTINGS[run.act - 1])
+}
+
+/** @deprecated Use SETTINGS / currentSetting. Kept for older imports. */
+export const ACT_NAMES: Record<number, { name: string; sub: string }> = Object.fromEntries(
+  DEFAULT_SETTINGS.map((id, i) => [i + 1, { name: SETTINGS[id].name, sub: SETTINGS[id].sub }]),
+)

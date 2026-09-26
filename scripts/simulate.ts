@@ -4,8 +4,11 @@ import { canPlay, endPlayerTurn, enemyAct, finishEnemyPhase, playCard, startComb
 import { CHARACTERS, CHARACTER_IDS } from '../src/game/characters'
 import { charge, livingEnemies, mkCard, pick, st } from '../src/game/core'
 import type { CharId, Combat, Run } from '../src/game/types'
+import { emptyRunStats } from '../src/game/stats'
 
 const N = Number(process.env.N ?? 300)
+/** Optional companion for the bot, e.g. COMP=office_dog:2 */
+const COMP = process.env.COMP
 
 function mkRun(ch: CharId, extra: number, act: number): Run {
   const def = CHARACTERS[ch]
@@ -21,7 +24,12 @@ function mkRun(ch: CharId, extra: number, act: number): Run {
   return {
     character: ch, hp: def.hp, maxHp: def.hp, gold: 0, deck, relics, act,
     map: { nodes: {}, rows: 0, bossId: '' }, position: null, floor: 0, seenBosses: [],
-    stats: { enemiesDefeated: 0, cardsPlayed: 0, damageDealt: 0 },
+    stats: emptyRunStats(),
+    settings: ['m2', 's3', 'logipharma', 'mine'],
+    companion: COMP ? { id: COMP.split(':')[0], level: Number(COMP.split(':')[1] ?? 1) } : null,
+    okr: null,
+    reviewLevel: 0,
+    startedAt: 0,
   }
 }
 

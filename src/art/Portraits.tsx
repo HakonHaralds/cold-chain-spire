@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react'
 import { Person } from './Person'
+import { Duck, FriendlyQA, Intern, ITGuy, OfficeDog, SummerStudent } from './Companions'
 
 /* ---------- reusable hair ---------- */
 const shortHair = (c: string) => <path d="M68,68 Q66,30 100,28 Q134,30 132,68 Q126,46 112,44 Q100,50 86,44 Q72,48 68,68 Z" fill={c} />
@@ -887,6 +888,12 @@ const ART: Record<string, () => ReactNode> = {
   yes_man: YesMan,
   boss_ceo: CEO,
   boss_peter: Peter,
+  comp_intern: Intern,
+  comp_duck: Duck,
+  comp_qa: FriendlyQA,
+  comp_it: ITGuy,
+  comp_dog: OfficeDog,
+  comp_student: SummerStudent,
 }
 
 export function Portrait({ id, size = 180, flip = false }: { id: string; size?: number; flip?: boolean }) {

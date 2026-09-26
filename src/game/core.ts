@@ -1,3 +1,4 @@
+import { emptyCombatStats } from './stats'
 import type { CardInst, Combat, EnemyInst, Fighter, StatusId } from './types'
 
 let seq = 1
@@ -14,6 +15,9 @@ export function shuffle<T>(arr: T[]): T[] {
 }
 
 export const st = (f: Fighter, id: StatusId) => f.statuses[id] ?? 0
+
+/** Combat stats (created lazily so combats restored from older saves still work). */
+export const cstats = (c: Combat) => (c.stats ??= emptyCombatStats())
 
 export function getFighter(c: Combat, id: string): Fighter | undefined {
   if (id === 'player') return c.player
@@ -56,6 +60,8 @@ export function addStatus(c: Combat, target: string, id: StatusId, n: number) {
   if (id === 'excursion' && target !== 'player' && c.relics.includes('dry_ice')) n += 1
   f.statuses[id] = (f.statuses[id] ?? 0) + n
   if (f.statuses[id] === 0) delete f.statuses[id]
+  if (id === 'excursion' && target !== 'player' && n > 0) cstats(c).excursionApplied += n
+  if (id === 'capacitor' && target === 'player') cstats(c).maxCharge = Math.max(cstats(c).maxCharge, f.statuses[id] ?? 0)
   if (DEBUFFS.includes(id) || n < 0) addFloat(c, target, `${n > 0 ? '+' : ''}${n} ${STATUS_INFO[id].name}`, 'status')
   if (n > 0) fx(c, target, DEBUFFS.includes(id) ? 'debuff' : 'buff')
 }
@@ -78,6 +84,7 @@ export function applyDamage(c: Combat, target: string, dmg: number, source?: str
   if (!t) return 0
   if (target !== 'player' && (t as EnemyInst).dead) return 0
   let rest = dmg
+  const blockBefore = t.block
   if (t.block > 0) {
     const absorbed = Math.min(t.block, rest)
     t.block -= absorbed
@@ -95,7 +102,9 @@ export function applyDamage(c: Combat, target: string, dmg: number, source?: str
     fx(c, target, source === 'player' || source === 'thorns-player' ? 'slash' : 'claw', big)
     if (big) c.shake += 1
     if (source === 'player' || source === 'thorns-player') c.dmgDealt += rest
+    if (target === 'player') cstats(c).damageTaken += rest
   }
+  if ((source === 'player' || source === 'thorns-player') && target !== 'player') cstats(c).maxHit = Math.max(cstats(c).maxHit, Math.min(dmg, blockBefore) + rest)
   if (target !== 'player' && t.hp <= 0) {
     ;(t as EnemyInst).dead = true
     t.block = 0
@@ -125,6 +134,7 @@ export function attack(c: Combat, source: string, target: string, base: number):
 export function loseHp(c: Combat, target: string, n: number) {
   const f = getFighter(c, target)
   if (!f || n <= 0) return
+  if (target === 'player') cstats(c).damageTaken += Math.min(n, f.hp)
   f.hp = Math.max(0, f.hp - n)
   addFloat(c, target, `-${n}`, 'damage')
   fx(c, target, 'heat')
@@ -146,6 +156,10 @@ export function gainBlock(c: Combat, target: string, base: number, raw = false) 
   n = Math.max(0, n)
   if (n === 0) return
   f.block += n
+  if (target === 'player') {
+    cstats(c).blockGained += n
+    cstats(c).maxBlock = Math.max(cstats(c).maxBlock, f.block)
+  }
   addFloat(c, target, `+${n} Block`, 'block')
   fx(c, target, 'shield')
   if (target === 'player' && st(f, 'auditTrail') > 0) {
@@ -160,6 +174,7 @@ export function heal(c: Combat, target: string, n: number) {
   const h = Math.min(n, f.maxHp - f.hp)
   if (h <= 0) return
   f.hp += h
+  if (target === 'player') cstats(c).healed += h
   addFloat(c, target, `+${h}`, 'heal')
   fx(c, target, 'heal')
 }
@@ -244,6 +259,8 @@ export function exhaustBugs(c: Combat, where: Pile[], max = Infinity): number {
     }
   }
   if (n === 0) return 0
+  cstats(c).bugsExhausted += n
+  cstats(c).cardsExhausted += n
   addFloat(c, 'player', `-${n} Bug${n > 1 ? 's' : ''}`, 'status')
   if (c.relics.includes('jlink')) {
     for (let i = 0; i < n; i++) {
@@ -264,6 +281,7 @@ export const charge = (c: Combat) => st(c.player, 'capacitor')
 export function gainCharge(c: Combat, n: number) {
   if (n <= 0) return
   c.player.statuses.capacitor = charge(c) + n
+  cstats(c).maxCharge = Math.max(cstats(c).maxCharge, charge(c))
   addFloat(c, 'player', `+${n} ⚡`, 'status')
 }
 

@@ -20,7 +20,7 @@ const defs: RelicDef[] = [
   { id: 'hoodie', name: 'Company Hoodie', icon: '🧥', tier: 'common', text: 'Start each combat with 10 Block.' },
   { id: 'kanelsnudur', name: 'Cinnamon Bun', icon: '🥐', tier: 'common', text: 'On pickup, heal 20 HP. Friday treats are sacred.' },
   { id: 'espresso', name: 'Espresso Machine', icon: '☕', tier: 'boss', text: 'Gain 1 additional Energy each turn. You can no longer Rest at the coffee machine: you are wired enough already.' },
-  { id: 'stock_options', name: 'Stock Options', icon: '📈', tier: 'boss', text: 'Gain 1 additional Energy each turn. Gain 50% less gold from combat. (Vesting schedule applies.)' },
+  { id: 'stock_options', name: 'Stock Options', icon: '📈', tier: 'boss', text: 'Gain 1 additional Energy each turn. Gain 50% fewer tokens from combat. (Vesting schedule applies.)' },
   { id: 'unlimited_pto', name: 'Unlimited PTO', icon: '🏖️', tier: 'boss', text: 'Gain 1 additional Energy each turn. At the start of each combat, shuffle 2 Meeting Invites into your draw pile. (Nobody actually takes it.)' },
   { id: 'corner_office', name: 'Corner Office', icon: '🪟', tier: 'boss', text: 'Draw 1 additional card each turn.' },
   { id: 'gdp_cert', name: 'GDP Certificate', icon: '🏅', tier: 'boss', text: 'At the end of your turn, gain 4 Block.' },

@@ -2508,3 +2508,10 @@ kbd {
 .card-text b.dmg-down {
   color: #ff8a8a;
 }
+
+.career-label {
+  margin: 10px 0 0;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--ct-teal);
+}

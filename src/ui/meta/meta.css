@@ -1,0 +1,715 @@
+/* ================= Meta progression UI ================= */
+
+/* ---------- achievement toast ---------- */
+.ach-toast-layer {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  pointer-events: none;
+}
+.ach-toast {
+  --glow: #cd7f32;
+  --glow2: #ffcf9a;
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 520px;
+  max-width: 88vw;
+  padding: 18px 28px 20px 20px;
+  border-radius: 16px;
+  border: 2px solid var(--glow);
+  background: radial-gradient(circle at 12% 50%, color-mix(in srgb, var(--glow) 35%, transparent), transparent 60%), linear-gradient(180deg, #13294a, #081628);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  overflow: visible;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 0 40px color-mix(in srgb, var(--glow) 70%, transparent), 0 18px 50px rgba(0, 0, 0, 0.6);
+  animation: achIn 650ms cubic-bezier(0.2, 1.5, 0.4, 1) both, achOut 400ms ease-in calc(var(--dur) - 400ms) forwards, achPulse 1.4s ease-in-out 650ms infinite;
+  font-family: inherit;
+}
+.ach-toast.tier-silver {
+  --glow: #c0d4e8;
+  --glow2: #ffffff;
+}
+.ach-toast.tier-gold {
+  --glow: #f2c230;
+  --glow2: #fff1b0;
+}
+.ach-toast.tier-platinum {
+  --glow: #7ef9ff;
+  --glow2: #e6fdff;
+}
+.ach-toast.tier-platinum .ach-name {
+  background: linear-gradient(90deg, #7ef9ff, #ff9bf2, #ffe08a, #7ef9ff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: achRainbow 2.5s linear infinite;
+}
+.ach-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  font-size: 44px;
+  background: radial-gradient(circle at 35% 30%, var(--glow2), var(--glow) 55%, color-mix(in srgb, var(--glow) 50%, black));
+  box-shadow: 0 0 24px var(--glow), inset 0 -6px 10px rgba(0, 0, 0, 0.35);
+  animation: achIcon 900ms cubic-bezier(0.3, 1.8, 0.5, 1) 200ms both;
+}
+.ach-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ach-kicker {
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--glow2);
+}
+.ach-kicker b {
+  color: var(--glow);
+}
+.ach-name {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+.ach-desc {
+  font-size: 14px;
+  color: #cfe0f0;
+}
+.ach-more {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: var(--glow);
+  color: #0b1a2c;
+  font-weight: 900;
+  font-size: 13px;
+}
+.ach-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ach-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -50%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: achShine 1.1s ease-in-out 450ms both;
+}
+.ach-timer {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--glow);
+  opacity: 0.7;
+  transform-origin: left;
+  animation: achTimer var(--dur) linear both;
+}
+.ach-confetti {
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.ach-confetti i {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  animation: achConfetti 1.3s cubic-bezier(0.1, 0.7, 0.3, 1) 250ms both;
+}
+@keyframes achIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-140%) scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes achOut {
+  to {
+    opacity: 0;
+    transform: translateY(-60%) scale(0.9);
+  }
+}
+@keyframes achPulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.35), 0 0 70px var(--glow), 0 18px 50px rgba(0, 0, 0, 0.6);
+  }
+}
+@keyframes achIcon {
+  from {
+    transform: scale(0) rotate(-180deg);
+  }
+}
+@keyframes achShine {
+  to {
+    left: 120%;
+  }
+}
+@keyframes achTimer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes achConfetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) rotate(var(--r));
+  }
+}
+@keyframes achRainbow {
+  to {
+    background-position: -300% 0;
+  }
+}
+
+/* ---------- meta screens ---------- */
+.meta-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px;
+  gap: 12px;
+}
+.meta-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.meta-head h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 900;
+}
+.meta-tabs {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.meta-tab {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+.meta-tab.on {
+  background: var(--ct-blue);
+  border-color: var(--ct-teal);
+}
+.meta-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.xpbar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(92, 214, 206, 0.35);
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+.xpbar.big {
+  height: 18px;
+}
+.xpfill {
+  height: 100%;
+  background: linear-gradient(90deg, #1b7f79, var(--ct-teal), #bff5ef);
+  box-shadow: 0 0 12px var(--ct-teal);
+  transition: width 300ms ease;
+}
+
+/* career */
+.career-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 16px;
+}
+.career-card,
+.career-ladder {
+  overflow-y: auto;
+}
+.career-title {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--gold);
+}
+.career-level {
+  color: var(--muted);
+}
+.career-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.career-stats b {
+  display: block;
+  font-size: 20px;
+  color: var(--ct-teal);
+}
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.review-list li {
+  display: grid;
+  grid-template-columns: 26px 180px 1fr;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.review-list li.locked {
+  opacity: 0.45;
+}
+.career-ladder ol {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.career-ladder li {
+  display: flex;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  opacity: 0.6;
+}
+.career-ladder li.got {
+  opacity: 1;
+}
+.career-ladder li.now {
+  border-color: var(--gold);
+  background: rgba(242, 194, 48, 0.08);
+}
+.rung {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--panel-border);
+  font-weight: 900;
+  font-size: 13px;
+}
+.got .rung {
+  background: var(--ct-teal);
+  color: #002a4d;
+}
+.rung-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rung-unlocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.unlock {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(92, 214, 206, 0.12);
+  border: 1px solid rgba(92, 214, 206, 0.3);
+}
+.unlock.dim {
+  opacity: 0.55;
+}
+
+/* compendium */
+.bestiary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
+}
+.beast {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  text-align: left;
+}
+.beast.tier-boss {
+  border-color: rgba(229, 72, 77, 0.6);
+}
+.beast.tier-elite {
+  border-color: rgba(255, 159, 122, 0.5);
+}
+.beast-art {
+  flex-shrink: 0;
+  width: 110px;
+}
+.beast-art .portrait {
+  width: 110px;
+  height: auto;
+}
+.beast.unseen .beast-art {
+  filter: brightness(0) drop-shadow(0 0 1px rgba(92, 214, 206, 0.6));
+  opacity: 0.8;
+}
+.beast h3 {
+  margin: 0;
+  font-size: 17px;
+}
+.quotes {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  font-size: 12px;
+  font-style: italic;
+  color: #cfe0f0;
+}
+.comp-section h2 {
+  font-size: 18px;
+  margin: 12px 0 8px;
+}
+.comp-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 10px;
+  padding: 8px 4px 16px;
+}
+.card-unknown {
+  width: 128px;
+  height: calc(128px * 1.42);
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 2px dashed rgba(92, 214, 206, 0.3);
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 40px;
+  font-weight: 900;
+  color: rgba(92, 214, 206, 0.4);
+}
+.comp-relics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+.comp-relic {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+.comp-relic.unseen {
+  opacity: 0.5;
+}
+.ach-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ach-progress .xpbar {
+  flex: 1;
+  margin: 0;
+}
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+}
+.ach-card {
+  --glow: #cd7f32;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+.ach-card.tier-silver {
+  --glow: #c0d4e8;
+}
+.ach-card.tier-gold {
+  --glow: #f2c230;
+}
+.ach-card.tier-platinum {
+  --glow: #7ef9ff;
+}
+.ach-card.got {
+  border-color: var(--glow);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--glow) 18%, transparent);
+}
+.ach-card.locked {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}
+.ach-card-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 24px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 2px solid var(--glow);
+}
+.ach-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* run summary */
+.run-summary {
+  margin: 16px auto 0;
+  max-width: 760px;
+  text-align: left;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-border);
+}
+.rs-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+.rs-lines {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+.rs-lines li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  animation: rise 300ms ease-out both;
+}
+.rs-lines li:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.rs-lines li:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.rs-lines li:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.rs-lines li:nth-child(5) {
+  animation-delay: 0.4s;
+}
+.rs-lines b {
+  color: var(--ct-teal);
+}
+.rs-total {
+  font-size: 17px;
+  border-bottom: 0 !important;
+}
+.rs-total b {
+  color: var(--gold) !important;
+}
+.rs-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.rs-title b {
+  font-size: 22px;
+  color: var(--gold);
+}
+.rs-title.levelup {
+  animation: rsLevel 800ms cubic-bezier(0.3, 1.8, 0.5, 1) both;
+}
+.rs-promo {
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  background: var(--gold);
+  color: #1a1200;
+  box-shadow: 0 0 18px var(--gold);
+  animation: achPulse 1.2s ease-in-out infinite;
+}
+@keyframes rsLevel {
+  from {
+    transform: scale(1.6);
+    filter: brightness(2);
+  }
+}
+.rs-unlocks,
+.rs-achs {
+  margin-top: 12px;
+}
+.rs-unlock {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(92, 214, 206, 0.12);
+  border: 1px solid rgba(92, 214, 206, 0.4);
+  font-size: 14px;
+  animation: rise 400ms ease-out both;
+}
+.rs-ach-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.rs-ach {
+  --glow: #cd7f32;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid var(--glow);
+  background: color-mix(in srgb, var(--glow) 15%, transparent);
+}
+.rs-ach.tier-silver {
+  --glow: #c0d4e8;
+}
+.rs-ach.tier-gold {
+  --glow: #f2c230;
+}
+.rs-ach.tier-platinum {
+  --glow: #7ef9ff;
+}
+
+/* character select pickers */
+.cs-options {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cs-options:empty {
+  display: none;
+}
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+.review-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.pill {
+  min-width: 34px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  font-weight: 700;
+}
+.pill.on {
+  background: #8a2a1c;
+  border-color: #ff9f7a;
+}
+.review-mods {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 88px;
+  overflow-y: auto;
+}
+.perk-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.perk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  font-size: 13px;
+}
+.perk.on {
+  background: var(--ct-blue);
+  border-color: var(--ct-teal);
+}
+.perk-icon {
+  font-size: 18px;
+}
+
+/* keep character select within the 900px stage once pickers are shown */
+.charselect:has(.cs-options .picker) {
+  gap: 8px;
+  padding-top: 8px;
+}
+.charselect:has(.cs-options .picker) .cs-title {
+  font-size: 28px;
+  margin: 0;
+}
+.charselect:has(.cs-options .picker) .cs-detail {
+  padding: 14px 20px;
+}

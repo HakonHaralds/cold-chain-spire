@@ -9,6 +9,9 @@ import { DeckModal } from './DeckModal'
 import { resetTours } from './Tutorial'
 import type { SaveData } from '../game/save'
 import { CHARACTERS } from '../game/characters'
+import { canRewrite } from '../game/cards'
+import { bump } from '../game/stats'
+import { fmtTokens, tokensText } from '../game/tokens'
 
 type SetRun = React.Dispatch<React.SetStateAction<Run | null>>
 type SetScreen = React.Dispatch<React.SetStateAction<Screen>>
@@ -25,12 +28,12 @@ function RelicBadge({ id, onClick, price, disabled }: { id: string; onClick?: ()
         <br />
         <span className="muted small">{r.text}</span>
       </span>
-      {price !== undefined && <span className="card-price">🪙 {price}</span>}
+      {price !== undefined && <span className="card-price">{fmtTokens(price)}</span>}
     </button>
   )
 }
 
-export function TitleScreen({ onStart, save, onContinue }: { onStart: () => void; save: SaveData | null; onContinue: () => void }) {
+export function TitleScreen({ onStart, save, onContinue, onCareer, onCompendium, careerLabel }: { onStart: () => void; save: SaveData | null; onContinue: () => void; onCareer: () => void; onCompendium: () => void; careerLabel: string }) {
   const [confirmNew, setConfirmNew] = useState(false)
   const [how, setHow] = useState(false)
   const [replayed, setReplayed] = useState(false)
@@ -60,6 +63,12 @@ export function TitleScreen({ onStart, save, onContinue }: { onStart: () => void
         <button className={`btn ${save ? '' : 'primary'} big`} onClick={() => (save && !confirmNew ? setConfirmNew(true) : onStart())}>
           {save && confirmNew ? 'Abandon saved run & start new?' : save ? 'New run' : 'Start a run'}
         </button>
+        <button className="btn ghost" onClick={onCareer} title="Career ladder and unlocks">
+          💼 Career
+        </button>
+        <button className="btn ghost" onClick={onCompendium} title="Enemies, cards, relics and achievements">
+          📚 Compendium
+        </button>
         <button className="btn ghost" onClick={() => setHow((h) => !h)}>
           How to play
         </button>
@@ -81,6 +90,7 @@ export function TitleScreen({ onStart, save, onContinue }: { onStart: () => void
           </ul>
         </div>
       )}
+      <p className="career-label">{careerLabel}</p>
       <p className="disclaimer">A work of affectionate office satire. Any resemblance to real vests is purely coincidental.</p>
     </div>
   )
@@ -94,7 +104,9 @@ export function RewardScreen({ screen, onTakeCard, onTakeRelic, onDone }: { scre
     <div className="panel-screen">
       <div className="panel reward">
         <h2>Loot</h2>
-        <div className="reward-row">🪙 {screen.gold} gold added</div>
+        <div className="reward-row">
+          {fmtTokens(screen.gold)} tokens added
+        </div>
         {screen.relic && (
           <div className="reward-row">
             <RelicBadge id={screen.relic} disabled={relicTaken} onClick={() => { onTakeRelic(screen.relic!); setRelicTaken(true) }} />
@@ -129,14 +141,15 @@ export function RewardScreen({ screen, onTakeCard, onTakeRelic, onDone }: { scre
   )
 }
 
-export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; used: boolean; onUse: () => void; setRun: SetRun; onDone: () => void }) {
+export function RestScreen({ run, used, onUse, setRun, onDone, healPct = 0.3 }: { run: Run; used: boolean; onUse: () => void; setRun: SetRun; onDone: () => void; healPct?: number }) {
   const [picking, setPicking] = useState(false)
+  const [variantFor, setVariantFor] = useState<CardInst | null>(null)
   const [done, setDoneText] = useState<string | null>(used ? 'You already had your coffee.' : null)
   const setDone = (t: string) => {
     setDoneText(t)
     onUse()
   }
-  const healAmt = Math.round(run.maxHp * 0.3)
+  const healAmt = Math.round(run.maxHp * healPct)
   const wired = run.relics.includes('espresso')
   return (
     <div className="panel-screen">
@@ -146,15 +159,15 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
         <p className="muted">It makes a noise like a jet engine. The coffee is excellent. Someone left a Post-it: "DESCALE ME".</p>
         {!done ? (
           <div className="rest-options">
-            <button className="btn option" disabled={wired} onClick={() => { setRun({ ...run, hp: Math.min(run.maxHp, run.hp + healAmt) }); setDone(`You recover ${healAmt} HP.`) }}>
+            <button className="btn option" disabled={wired} onClick={() => { setRun({ ...run, hp: Math.min(run.maxHp, run.hp + healAmt), stats: bump(run.stats, { rests: 1 }) }); setDone(`You recover ${healAmt} HP.`) }}>
               <span className="opt-icon">{wired ? '⚡' : '😌'}</span>
               <b>Rest</b>
               <span>{wired ? 'Too wired (Espresso Machine)' : `Heal ${healAmt} HP`}</span>
             </button>
             <button className="btn option" onClick={() => setPicking(true)} disabled={!run.deck.some(isUpgradable)}>
               <span className="opt-icon">🛠️</span>
-              <b>Refactor</b>
-              <span>Upgrade a card</span>
+              <b>Upgrade</b>
+              <span>Refactor or Rewrite a card</span>
             </button>
           </div>
         ) : (
@@ -168,15 +181,29 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
       </div>
       {picking && (
         <DeckModal
-          title="Refactor: choose a card to upgrade"
+          title="Choose a card to upgrade"
           cards={run.deck}
           filter={isUpgradable}
           preview="upgrade"
           onClose={() => setPicking(false)}
           onPick={(c) => {
-            setRun({ ...run, deck: run.deck.map((d) => (d.uid === c.uid ? { ...d, upgraded: true } : d)) })
             setPicking(false)
-            setDone(`${DEF[c.id].name} upgraded to ${DEF[c.id].name}+.`)
+            setVariantFor(c)
+          }}
+        />
+      )}
+      {variantFor && (
+        <UpgradeChoice
+          card={variantFor}
+          onCancel={() => {
+            setVariantFor(null)
+            setPicking(true)
+          }}
+          onPick={(rewrite) => {
+            const c = variantFor
+            setRun({ ...run, deck: run.deck.map((d) => (d.uid === c.uid ? { ...d, upgraded: true, ...(rewrite ? { rewrite: true } : {}) } : d)), stats: bump(run.stats, { rests: 1, upgrades: 1 }) })
+            setVariantFor(null)
+            setDone(rewrite ? `${DEF[c.id].name} rewritten: cheaper, but it ships a Bug.` : `${DEF[c.id].name} refactored to ${DEF[c.id].name}+.`)
           }}
         />
       )}
@@ -186,12 +213,12 @@ export function RestScreen({ run, used, onUse, setRun, onDone }: { run: Run; use
 
 export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone }: { run: Run; screen: Extract<Screen, { kind: 'shop' }>; setRun: SetRun; setScreen: SetScreen; grantRelic: (r: Run, id: string) => Run; onDone: () => void }) {
   const [removing, setRemoving] = useState(false)
-  const removeCost = 75
+  const removeCost = 75000
   return (
     <div className="panel-screen">
       <div className="panel shop">
         <h2>🛒 The Vending Machine</h2>
-        <p className="muted">It only takes exact change and the occasional soul. You have 🪙 {run.gold}.</p>
+        <p className="muted">It only takes exact change and the occasional soul. You have {tokensText(run.gold)}.</p>
         <div className="card-choice wrap">
           {screen.cards.map((s, i) => (
             <div key={s.id} className={`shop-item ${s.sold ? 'sold' : ''}`}>
@@ -201,7 +228,7 @@ export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone 
                 playable={!s.sold && run.gold >= s.price}
                 onClick={() => {
                   if (s.sold || run.gold < s.price) return
-                  setRun({ ...run, gold: run.gold - s.price, deck: [...run.deck, { uid: `${Date.now()}${i}`, id: s.id, upgraded: false }] })
+                  setRun({ ...run, gold: run.gold - s.price, deck: [...run.deck, { uid: `${Date.now()}${i}`, id: s.id, upgraded: false }], stats: bump(run.stats, { tokensSpent: s.price, cardsAdded: 1 }) })
                   setScreen({ ...screen, cards: screen.cards.map((x, j) => (j === i ? { ...x, sold: true } : x)) })
                 }}
               />
@@ -216,7 +243,7 @@ export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone 
               price={s.price}
               disabled={s.sold || run.gold < s.price}
               onClick={() => {
-                setRun(grantRelic({ ...run, gold: run.gold - s.price }, s.id))
+                setRun(grantRelic({ ...run, gold: run.gold - s.price, stats: bump(run.stats, { tokensSpent: s.price, relicsGained: 1 }) }, s.id))
                 setScreen({ ...screen, relics: screen.relics.map((x, j) => (j === i ? { ...x, sold: true } : x)) })
               }}
             />
@@ -228,7 +255,7 @@ export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone 
               <br />
               <span className="muted small">Delete a card from your deck. {screen.removeUsed ? '(Sold out)' : ''}</span>
             </span>
-            <span className="card-price">🪙 {removeCost}</span>
+            <span className="card-price">{fmtTokens(removeCost)}</span>
           </button>
         </div>
         <div className="actions">
@@ -243,7 +270,7 @@ export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone 
           cards={run.deck}
           onClose={() => setRemoving(false)}
           onPick={(c) => {
-            setRun({ ...run, gold: run.gold - removeCost, deck: run.deck.filter((d) => d.uid !== c.uid) })
+            setRun({ ...run, gold: run.gold - removeCost, deck: run.deck.filter((d) => d.uid !== c.uid), stats: bump(run.stats, { tokensSpent: removeCost, removals: 1 }) })
             setScreen({ ...screen, removeUsed: true })
             setRemoving(false)
           }}
@@ -253,7 +280,7 @@ export function ShopScreen({ run, screen, setRun, setScreen, grantRelic, onDone 
   )
 }
 
-export function EventScreen({ run, screen, setRun, setScreen, onDone }: { run: Run; screen: Extract<Screen, { kind: 'event' }>; setRun: SetRun; setScreen: SetScreen; onDone: () => void }) {
+export function EventScreen({ run, screen, setRun, setScreen, onDone, onChoice }: { run: Run; screen: Extract<Screen, { kind: 'event' }>; setRun: SetRun; setScreen: SetScreen; onDone: () => void; onChoice?: (option: number, after: Run) => void }) {
   const ev = EVENT[screen.eventId]
   const [removing, setRemoving] = useState(false)
   return (
@@ -264,7 +291,7 @@ export function EventScreen({ run, screen, setRun, setScreen, onDone }: { run: R
         <p>{ev.body}</p>
         {screen.result === null ? (
           <div className="event-options">
-            {ev.options.map((o) => {
+            {ev.options.map((o, oi) => {
               const enabled = o.enabled ? o.enabled(run) : true
               return (
                 <button
@@ -274,6 +301,7 @@ export function EventScreen({ run, screen, setRun, setScreen, onDone }: { run: R
                   onClick={() => {
                     const res = o.apply(run)
                     setRun(res.run)
+                    onChoice?.(oi, res.run)
                     if (res.text === 'REMOVE') {
                       setRemoving(true)
                       setScreen({ ...screen, result: 'You emerge, shivering, a little lighter.' })
@@ -301,7 +329,7 @@ export function EventScreen({ run, screen, setRun, setScreen, onDone }: { run: R
           title="Choose a card to remove"
           cards={run.deck}
           onPick={(c) => {
-            setRun((r) => (r ? { ...r, deck: r.deck.filter((d) => d.uid !== c.uid) } : r))
+            setRun((r) => (r ? { ...r, deck: r.deck.filter((d) => d.uid !== c.uid), stats: bump(r.stats, { removals: 1 }) } : r))
             setRemoving(false)
           }}
         />
@@ -350,13 +378,14 @@ function Stats({ run }: { run: Run }) {
   )
 }
 
-export function GameOverScreen({ run, onRestart }: { run: Run; onRestart: () => void }) {
+export function GameOverScreen({ run, onRestart, summary }: { run: Run; onRestart: () => void; summary?: React.ReactNode }) {
   return (
     <div className="panel-screen">
       <div className="panel end lose">
         <h2>You have been restructured.</h2>
         <p className="muted">Your access badge no longer opens the door. HR will be in touch about your laptop.</p>
         <Stats run={run} />
+        {summary}
         <div className="actions">
           <button className="btn primary big" onClick={onRestart}>
             Re-apply for the job
@@ -367,7 +396,7 @@ export function GameOverScreen({ run, onRestart }: { run: Run; onRestart: () => 
   )
 }
 
-export function VictoryScreen({ run, portrait, onRestart }: { run: Run; portrait: string; onRestart: () => void }) {
+export function VictoryScreen({ run, portrait, onRestart, summary }: { run: Run; portrait: string; onRestart: () => void; summary?: React.ReactNode }) {
   return (
     <div className="panel-screen">
       <div className="panel end win">
@@ -378,10 +407,40 @@ export function VictoryScreen({ run, portrait, onRestart }: { run: Run; portrait
           credit. You get a hoodie.
         </p>
         <Stats run={run} />
+        {summary}
         <div className="actions">
           <button className="btn primary big" onClick={onRestart}>
             New fiscal year
           </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Branching upgrade (M8): Refactor (the normal +) or Rewrite (+, costs 1 less, ships a Bug when played). */
+function UpgradeChoice({ card, onPick, onCancel }: { card: CardInst; onPick: (rewrite: boolean) => void; onCancel: () => void }) {
+  const rewriteOk = canRewrite(card.id)
+  return (
+    <div className="modal-backdrop" onClick={onCancel} role="dialog" aria-modal aria-label="Choose an upgrade">
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ width: 'auto' }}>
+        <header className="modal-head">
+          <h2>How do you want to upgrade {DEF[card.id].name}?</h2>
+          <button className="btn ghost" onClick={onCancel}>
+            Back
+          </button>
+        </header>
+        <div className="upgrade-choice">
+          <div className="upgrade-option">
+            <h3>🛠️ Refactor</h3>
+            <p>The clean upgrade. Better numbers, no side effects.</p>
+            <Card id={card.id} upgraded onClick={() => onPick(false)} className="pickable" tips="left" />
+          </div>
+          <div className={`upgrade-option ${rewriteOk ? '' : 'disabled'}`}>
+            <h3>⚡ Rewrite</h3>
+            <p>{rewriteOk ? 'Upgraded and costs 1 less, but every play ships a Bug into your draw pile.' : 'Already free to play: nothing to rewrite.'}</p>
+            <Card id={card.id} upgraded rewrite={rewriteOk} playable={rewriteOk} onClick={rewriteOk ? () => onPick(true) : undefined} className={rewriteOk ? 'pickable' : ''} tips="right" />
+          </div>
         </div>
       </div>
     </div>
