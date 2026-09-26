@@ -8,6 +8,8 @@ export interface MetaProfile {
   reviewUnlocked: number // highest Performance Review level available (0 = none yet)
   reviewBeaten: Partial<Record<CharId, number>> // best review level won per character (-1 = never won)
   charWins: Partial<Record<CharId, number>>
+  charRuns: Partial<Record<CharId, number>>
+  charAct1: Partial<Record<CharId, boolean>> // beat the Act 1 boss with this character
   runs: number
   wins: number
   bestFloor: number
@@ -38,6 +40,8 @@ const fresh = (): MetaProfile => ({
   reviewUnlocked: 0,
   reviewBeaten: {},
   charWins: {},
+  charRuns: {},
+  charAct1: {},
   runs: 0,
   wins: 0,
   bestFloor: 0,

@@ -41,21 +41,21 @@ const defs: CompanionDef[] = [
     portrait: 'comp_intern',
     when: 'start',
     levels: [
-      'Start of turn: a random small effect (3 damage, 3 Block or draw 1). 25% chance to misfire and add a Bug.',
-      'Start of turn: a random effect (4 damage, 4 Block or draw 1). 15% chance to misfire.',
-      'Start of turn: a random effect (7 damage, 7 Block or draw 2). 5% chance to misfire.',
+      'Start of turn: a random small effect (2 damage, 2 Block or draw 1). 30% chance to misfire and add a Bug.',
+      'Start of turn: a random effect (3 damage, 3 Block or draw 1). 20% chance to misfire.',
+      'Start of turn: a random effect (4 damage, 4 Block or draw 1). 10% chance to misfire.',
     ],
     act: (c, level) => {
-      if (Math.random() < lv(level, 0.25, 0.15, 0.05)) {
+      if (Math.random() < lv(level, 0.3, 0.2, 0.1)) {
         addCards(c, 'bug', 'discard', 1)
         addFloat(c, COMPANION, 'Oops! +1 Bug', 'status')
         say(c, COMPANION, pick(['I pushed to main. Is that bad?', 'Which one was prod again?', 'I renamed the variable to "thing2".']))
         return
       }
       const r = Math.floor(Math.random() * 3)
-      if (r === 0) bite(c, lv(level, 3, 4, 7))
-      else if (r === 1) gainBlock(c, 'player', lv(level, 3, 4, 7), true)
-      else drawCards(c, lv(level, 1, 1, 2))
+      if (r === 0) bite(c, lv(level, 2, 3, 4))
+      else if (r === 1) gainBlock(c, 'player', lv(level, 2, 3, 4), true)
+      else drawCards(c, 1)
       fx(c, COMPANION, 'buff')
     },
     quips: ['Can I shadow you?', 'I made a Jira for that!', 'Is it always like this?', 'I read the whole Confluence. All of it.'],
@@ -67,16 +67,14 @@ const defs: CompanionDef[] = [
     bio: 'Has solved more production incidents than the entire on-call rota. Never says a word.',
     portrait: 'comp_duck',
     when: 'start',
-    levels: ['Every 2nd turn: draw 1 card.', 'Every 2nd turn: draw 2 cards.', 'Every turn: draw 1 card. Every 3rd turn also gain 1 Energy.'],
+    levels: ['Every 3rd turn: draw 1 card.', 'Every 2nd turn: draw 1 card.', 'Every 2nd turn: draw 1 card and gain 1 Energy.'],
     act: (c, level) => {
+      if (c.turn % (level === 1 ? 3 : 2) !== 0) return
+      drawCards(c, 1)
       if (level >= 3) {
-        drawCards(c, 1)
-        if (c.turn % 3 === 0) {
-          c.energy += 1
-          addFloat(c, 'player', '+1 Energy', 'status')
-        }
-      } else if (c.turn % 2 === 0) drawCards(c, lv(level, 1, 2, 1))
-      else return
+        c.energy += 1
+        addFloat(c, 'player', '+1 Energy', 'status')
+      }
       addFloat(c, COMPANION, 'Squeak!', 'status')
       fx(c, COMPANION, 'buff')
     },
@@ -90,15 +88,15 @@ const defs: CompanionDef[] = [
     portrait: 'comp_qa',
     when: 'start',
     levels: [
+      'Every 3rd turn: apply 1 Weak to the enemy about to hit hardest.',
       'Every 2nd turn: apply 1 Weak to the enemy about to hit hardest.',
-      'Every turn: apply 1 Weak to the enemy about to hit hardest.',
-      'Every turn: apply 1 Weak to the two enemies about to hit hardest.',
+      'Every 2nd turn: apply 1 Weak to the two enemies about to hit hardest.',
     ],
     act: (c, level) => {
       const foes = livingEnemies(c)
       if (!foes.length) return
       const threat = (e: (typeof foes)[number]) => (shownDamage(e, c) ?? 0) * (intentOf(e, c).hits ?? 1)
-      if (level === 1 && c.turn % 2 === 1) return
+      if (c.turn % (level === 1 ? 3 : 2) !== 0) return
       const ranked = [...foes].sort((a, b) => threat(b) - threat(a))
       for (const t of ranked.slice(0, level >= 3 ? 2 : 1)) addStatus(c, t.uid, 'weak', 1)
     },
@@ -112,12 +110,12 @@ const defs: CompanionDef[] = [
     portrait: 'comp_it',
     when: 'end',
     levels: [
+      'End of turn: gain 2 Block.',
       'End of turn: gain 3 Block.',
-      'End of turn: gain 5 Block.',
-      'End of turn: gain 6 Block and exhaust a Bug, Meeting Invite, Deviation Report or Hangover from your hand.',
+      'End of turn: gain 4 Block and exhaust a Bug, Meeting Invite, Deviation Report or Hangover from your hand.',
     ],
     act: (c, level) => {
-      gainBlock(c, 'player', lv(level, 3, 5, 6), true)
+      gainBlock(c, 'player', lv(level, 2, 3, 4), true)
       if (level >= 3) {
         const i = c.hand.findIndex((h) => STATUS_JUNK.includes(h.id))
         if (i >= 0) {
@@ -136,10 +134,11 @@ const defs: CompanionDef[] = [
     bio: 'Officially "emotional support". Unofficially head of security. Bites Sensitech reps on sight.',
     portrait: 'comp_dog',
     when: 'start',
-    levels: ['Start of turn: bite a random enemy for 2.', 'Start of turn: bite for 3 and heal you 1 HP.', 'Start of turn: bite for 5 and heal you 1 HP.'],
+    levels: ['Every 2nd turn: bite a random enemy for 3.', 'Start of turn: bite a random enemy for 2.', 'Start of turn: bite for 3 and heal you 1 HP.'],
     act: (c, level) => {
-      bite(c, lv(level, 2, 3, 5))
-      if (level >= 2) heal(c, 'player', 1)
+      if (level === 1 && c.turn % 2 !== 0) return
+      bite(c, lv(level, 3, 2, 3))
+      if (level >= 3) heal(c, 'player', 1)
     },
     quips: ['Woof!', 'Grrr…', '(wags aggressively)', '(steals a sandwich)'],
   },
@@ -151,23 +150,23 @@ const defs: CompanionDef[] = [
     portrait: 'comp_student',
     when: 'end',
     levels: [
-      'End of turn, by your class: Firmware exhausts 1 Bug; Hardware gains 1 Charge every 3rd turn; Calibration applies 1 Excursion to a random enemy every 3rd turn.',
-      'End of turn: Firmware exhausts 1 Bug and gains 3 Block; Hardware gains 1 Charge every 2nd turn and 2 Block; Calibration applies 1 Excursion to a random enemy every 2nd turn.',
-      'End of turn: Firmware exhausts 2 Bugs and gains 4 Block; Hardware gains 1 Charge and 3 Block; Calibration applies 1 Excursion to a random enemy.',
+      'End of turn, every 3rd turn, by your class: Firmware exhausts 1 Bug; Hardware gains 1 Charge; Calibration applies 1 Excursion to a random enemy.',
+      'End of turn, every 2nd turn: Firmware exhausts 1 Bug; Hardware gains 1 Charge; Calibration applies 1 Excursion to a random enemy. Also gain 2 Block.',
+      'End of turn, every 2nd turn: Firmware exhausts 2 Bugs; Hardware gains 2 Charge; Calibration applies 2 Excursion to a random enemy. Also gain 3 Block.',
     ],
     act: (c, level) => {
       const cls = classOf(c)
-      if (cls === 'fw') {
-        exhaustBugs(c, ['hand', 'discard'], lv(level, 1, 1, 2))
-        if (level >= 2) gainBlock(c, 'player', lv(level, 0, 3, 4), true)
-      } else if (cls === 'hw') {
-        if (level >= 3 || c.turn % (level === 2 ? 2 : 3) === 0) gainCharge(c, 1)
-        if (level >= 2) gainBlock(c, 'player', lv(level, 0, 2, 3), true)
-      } else if (level >= 3 || c.turn % (level === 2 ? 2 : 3) === 0) {
+      if (c.turn % (level === 1 ? 3 : 2) !== 0) return
+      const n = level >= 3 ? 2 : 1
+      if (cls === 'fw') exhaustBugs(c, ['hand', 'discard'], n)
+      else if (cls === 'hw') gainCharge(c, n)
+      else {
         const e = randomEnemy(c)
-        if (e) addStatus(c, e.uid, 'excursion', 1)
+        if (e) addStatus(c, e.uid, 'excursion', n)
       }
+      if (level >= 2) gainBlock(c, 'player', lv(level, 0, 2, 3), true)
     },
+
     quips: ['According to the datasheet…', 'I wrote a script for that.', 'Is this in the onboarding doc?', 'I fixed the test. It was the test.'],
   },
 ]

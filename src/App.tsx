@@ -13,7 +13,11 @@ import { clearSave, readSave, saveable, writeSave } from './game/save'
 import { bump, emptyRunStats } from './game/stats'
 import type { CharId, Combat, MapNode, Run, Screen } from './game/types'
 import {
+  applyBenefits,
   applyPerk,
+  benefitExtraEliteCard,
+  benefitRestBonus,
+  benefitShopMul,
   applyReviewStart,
   cardRewardCount,
   careerLevel,
@@ -188,8 +192,8 @@ export default function App() {
   }, [run, screen, combat, lastEvents, devMode])
 
   const embark = (id: CharId, opts: RunOptions) => {
-    let r = applyReviewStart(newRun(id, opts.reviewLevel))
-    r = applyPerk(r, opts.perk)
+    let r = applyBenefits(applyReviewStart(newRun(id, opts.reviewLevel)))
+    for (const perk of opts.perks) r = applyPerk(r, perk)
     recordCardsSeen(r.deck.map((c) => c.id))
     r.relics.forEach((rel) => recordRelic(rel))
     setRun(r)
@@ -253,7 +257,7 @@ export default function App() {
         setScreen({ kind: 'treasure', relic: pick(unownedCommon(r).length ? unownedCommon(r) : ['kanelsnudur']), taken: false })
         break
       case 'shop': {
-        const mul = shopPriceMul(r.reviewLevel)
+        const mul = shopPriceMul(r.reviewLevel) * benefitShopMul()
         const price = (base: number) => Math.round(((base + rand(-8, 8)) * K * mul) / 1000) * 1000
         const cards = shuffle(poolFor(r.character))
           .slice(0, 6)
@@ -359,7 +363,7 @@ export default function App() {
       const gold = Math.round((base * K * mul) / 1000) * 1000
       const relic = combat.kind === 'elite' && unownedCommon(r).length ? pick(unownedCommon(r)) : null
       const bossRelics = combat.kind === 'boss' ? shuffle(BOSS_RELICS.filter((id) => !r.relics.includes(id))).slice(0, 3) : null
-      const cards = rollCardRewards(cardRewardCount(r.reviewLevel), combat.kind !== 'normal', r.character)
+      const cards = rollCardRewards(cardRewardCount(r.reviewLevel) + (combat.kind !== 'normal' ? benefitExtraEliteCard() : 0), combat.kind !== 'normal', r.character)
       recordCardsSeen(cards)
       setRun({ ...r, gold: r.gold + gold, stats: bump(r.stats, { tokensEarned: gold }) })
       setScreen({ kind: 'reward', gold, cards, relic, bossRelics })
@@ -448,7 +452,7 @@ export default function App() {
                   />
                 )}
                 {screen.kind === 'rest' && run && (
-                  <RestScreen run={run} used={!!screen.used} onUse={() => setScreen({ kind: 'rest', used: true })} setRun={setRun} onDone={backToMap} healPct={restHealPct(run.reviewLevel)} />
+                  <RestScreen run={run} used={!!screen.used} onUse={() => setScreen({ kind: 'rest', used: true })} setRun={setRun} onDone={backToMap} healPct={restHealPct(run.reviewLevel) + benefitRestBonus()} />
                 )}
                 {screen.kind === 'shop' && run && (
                   <ShopScreen

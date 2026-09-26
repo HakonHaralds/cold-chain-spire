@@ -125,7 +125,7 @@ export const EVENTS: GameEvent[] = [
     body: 'The bus stops between a steaming lagoon and a volcano trail. The guide says the weather will change in five minutes. It always does.',
     options: [
       { label: 'Soak in the lagoon', detail: `Lose ${tokensText(50000)}. Heal to full.`, enabled: (r) => r.gold >= 50000, apply: (r) => ({ run: { ...spend(r, 50000), hp: r.maxHp }, text: 'Silica mud mask. Zero stress. Mild sulfur smell.' }) },
-      { label: 'Hike the volcano', detail: 'Lose 8 HP. Raise Max HP by 8.', apply: (r) => ({ run: maxHp(hurt(r, 8), 8), text: 'Horizontal rain. Glorious views. You feel sturdier.' }) },
+      { label: 'Hike the volcano', detail: 'Lose 8 HP. Raise Max HP by 6.', apply: (r) => ({ run: maxHp(hurt(r, 8), 6), text: 'Horizontal rain. Glorious views. You feel sturdier.' }) },
       { label: 'Draft slides on the bus', detail: `Gain ${tokensText(35000)}.`, apply: (r) => ({ run: earn(r, 35000), text: 'Your offsite recap deck impresses leadership. Spot bonus! The bus smells of dried fish.' }) },
     ],
   },
@@ -136,7 +136,7 @@ export const EVENTS: GameEvent[] = [
     body: 'The door clicked shut behind you. It is −20 °C. While waiting for rescue, you have time to reflect on your habits.',
     options: [
       { label: 'Reflect deeply', detail: 'Lose 6 HP. Remove a card from your deck.', enabled: (r) => r.deck.length > 5, apply: (r) => ({ run: hurt(r, 6), text: 'REMOVE' }) },
-      { label: 'Do jumping jacks', detail: 'Raise Max HP by 4.', apply: (r) => ({ run: maxHp(r, 4), text: 'Cardio at −20 °C. Facilities lets you out after 20 minutes, logged as an excursion but noticeably fitter.' }) },
+      { label: 'Do jumping jacks', detail: 'Raise Max HP by 2.', apply: (r) => ({ run: maxHp(r, 2), text: 'Cardio at −20 °C. Facilities lets you out after 20 minutes, logged as an excursion but noticeably fitter.' }) },
     ],
   },
   {
@@ -164,7 +164,7 @@ export const EVENTS: GameEvent[] = [
     options: [
       { label: 'Evacuate properly', detail: 'Heal 10 HP.', apply: (r) => ({ run: healR(r, 10), text: 'Twenty minutes in the fresh air at the assembly point. You feel like a new person. A cold new person.' }) },
       { label: 'Keep coding with headphones on', detail: 'Lose 7 HP. Upgrade a random card.', apply: (r) => ({ run: upgradeRandom(hurt(r, 7)), text: 'The floor is empty and quiet. Best focus time of the year. Facilities is not amused.' }) },
-      { label: 'Carry the office plant out heroically', detail: 'Raise Max HP by 4.', apply: (r) => ({ run: maxHp(r, 4), text: 'The ficus survives. You are thanked in the all-hands. You have never felt stronger.' }) },
+      { label: 'Carry the office plant out heroically', detail: 'Raise Max HP by 3.', apply: (r) => ({ run: maxHp(r, 3), text: 'The ficus survives. You are thanked in the all-hands. You have never felt stronger.' }) },
     ],
   },
   {

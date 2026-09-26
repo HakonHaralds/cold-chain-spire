@@ -713,3 +713,53 @@
 .charselect:has(.cs-options .picker) .cs-detail {
   padding: 14px 20px;
 }
+
+.char-progress {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.char-progress li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.char-progress li.locked b {
+  color: var(--muted);
+}
+.perk-ladder {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.ladder-perk {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+  cursor: help;
+}
+.ladder-perk.got {
+  border-color: var(--ct-teal);
+  background: rgba(92, 214, 206, 0.15);
+}
+.ladder-perk.next {
+  opacity: 0.55;
+  border-style: dashed;
+  border-color: var(--gold);
+}
+
+.char-section {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  clear: both;
+}

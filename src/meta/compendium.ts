@@ -1,6 +1,6 @@
 import type { Run } from '../game/types'
 import { achievementsSince, checkAchievements, type AchievementDef } from './achievements'
-import { levelForXp, runXp, TIER_XP, unlocksBetween, type Unlock, type XpLine } from './career'
+import { CHAR_ORDER, characterName, characterUnlocked, levelForXp, PERK, PERK_LADDER, runXp, TIER_XP, unlocksBetween, type Unlock, type XpLine } from './career'
 import { MAX_REVIEW } from './review'
 import { loadMeta, updateMeta } from './profile'
 
@@ -67,7 +67,11 @@ export function recordRunEnd(run: Run, won: boolean): RunEndResult {
   const xpBefore = Math.max(0, before.xp - achievementXp)
   let newReviewLevel: number | null = null
   const lvl = run.reviewLevel ?? 0
+  const charsBefore = CHAR_ORDER.filter((c) => characterUnlocked(c, before))
+  const perkBefore = before.charWins[run.character] ?? 0
   const after = updateMeta((m) => {
+    m.charRuns[run.character] = (m.charRuns[run.character] ?? 0) + 1
+    if ((run.stats.bossesDefeated ?? 0) >= 1 || run.act >= 2) m.charAct1[run.character] = true
     m.xp += runTotal
     m.runs += 1
     m.bestFloor = Math.max(m.bestFloor, run.floor)
@@ -94,6 +98,11 @@ export function recordRunEnd(run: Run, won: boolean): RunEndResult {
   const final = loadMeta()
   const levelBefore = levelForXp(xpBefore)
   const levelAfter = levelForXp(final.xp)
+  // Character and per-character perk unlocks earned by this run.
+  const extra: Unlock[] = []
+  for (const c of CHAR_ORDER) if (!charsBefore.includes(c) && characterUnlocked(c, final)) extra.push({ kind: 'character', id: c, label: `New character: ${characterName(c)}` })
+  const perkId = PERK_LADDER[run.character][perkBefore]
+  if (won && perkId && (final.charWins[run.character] ?? 0) > perkBefore) extra.push({ kind: 'perk', id: perkId, label: `${characterName(run.character)} perk: ${PERK[perkId].name}: ${PERK[perkId].desc}` })
   return {
     xpLines: lines,
     achievementXp: achievementsSince(startedAt).reduce((a, x) => a + TIER_XP[x.tier], 0),
@@ -102,7 +111,7 @@ export function recordRunEnd(run: Run, won: boolean): RunEndResult {
     xpAfter: final.xp || after.xp,
     levelBefore,
     levelAfter,
-    newUnlocks: unlocksBetween(levelBefore, levelAfter),
+    newUnlocks: [...extra, ...unlocksBetween(levelBefore, levelAfter)],
     newReviewLevel,
     achievements: achievementsSince(startedAt),
   }

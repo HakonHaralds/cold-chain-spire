@@ -1,4 +1,5 @@
-import { PERK, reviewAvailable, unlockedPerks } from '../../meta/career'
+import { nextPerk, PERK, perkSlots, perksFor, reviewAvailable } from '../../meta/career'
+import type { CharId } from '../../game/types'
 import { REVIEW_LEVELS } from '../../meta/review'
 import './meta.css'
 
@@ -31,26 +32,41 @@ export function ReviewPicker({ value, onChange }: { value: number; onChange: (v:
   )
 }
 
-/** Onboarding perk picker (career unlocks). Hidden until the first perk is unlocked. */
-export function PerkPicker({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
-  const perks = unlockedPerks()
-  if (!perks.length) return null
+/** Onboarding perk picker: perks are earned per character by winning with them; career levels add slots. */
+export function PerkPicker({ character, value, onChange }: { character: CharId; value: string[]; onChange: (v: string[]) => void }) {
+  const perks = perksFor(character)
+  const slots = perkSlots()
+  const next = nextPerk(character)
+  const toggle = (id: string) => {
+    if (value.includes(id)) onChange(value.filter((x) => x !== id))
+    else onChange(slots === 1 ? [id] : [...value, id].slice(-slots))
+  }
   return (
     <div className="picker">
-      <span className="overline">Onboarding perk</span>
-      <div className="perk-row">
-        <button className={`perk ${value === null ? 'on' : ''}`} onClick={() => onChange(null)}>
-          <span className="perk-icon">🚫</span>
-          <b>None</b>
-        </button>
-        {perks.map((p) => (
-          <button key={p.id} className={`perk ${value === p.id ? 'on' : ''}`} onClick={() => onChange(p.id)} title={p.desc}>
-            <span className="perk-icon">{p.icon}</span>
-            <b>{p.name}</b>
-          </button>
-        ))}
-      </div>
-      {value && <span className="muted small">{PERK[value].desc}</span>}
+      <span className="overline">
+        Onboarding perks · pick {slots === 1 ? '1' : `up to ${slots}`}
+      </span>
+      {perks.length === 0 ? (
+        <span className="muted small">Win a run as this character to earn their first onboarding perk{next ? ` (${next.icon} ${next.name})` : ''}.</span>
+      ) : (
+        <>
+          <div className="perk-row">
+            {perks.map((p) => (
+              <button key={p.id} className={`perk ${value.includes(p.id) ? 'on' : ''}`} onClick={() => toggle(p.id)} title={p.desc}>
+                <span className="perk-icon">{p.icon}</span>
+                <b>{p.name}</b>
+              </button>
+            ))}
+            {next && (
+              <span className="perk locked" title={`Win again to unlock: ${next.desc}`}>
+                <span className="perk-icon">🔒</span>
+                <b>Next win</b>
+              </span>
+            )}
+          </div>
+          <span className="muted small">{value.length ? value.map((id) => PERK[id].desc).join(' · ') : 'No perk selected.'}</span>
+        </>
+      )}
     </div>
   )
 }

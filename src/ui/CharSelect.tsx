@@ -5,21 +5,27 @@ import { RELIC } from '../game/relics'
 import type { CharId } from '../game/types'
 import { Card } from './Card'
 import { PerkPicker, ReviewPicker } from './meta/Pickers'
-import { reviewAvailable } from '../meta/career'
+import { characterUnlocked, characterUnlockHint, reviewAvailable } from '../meta/career'
 
 export interface RunOptions {
   reviewLevel: number
-  perk: string | null
+  perks: string[]
 }
 
 export function CharSelect({ onPick, onBack }: { onPick: (id: CharId, opts: RunOptions) => void; onBack: () => void }) {
   const ids = Object.keys(CHARACTERS) as CharId[]
-  const [sel, setSel] = useState<CharId>(ids[0])
+  const unlocked = (id: CharId) => characterUnlocked(id)
+  const [sel, setSel] = useState<CharId>(() => [...ids].reverse().find(unlocked) ?? ids[0])
   const [review, setReview] = useState(() => Math.min(reviewAvailable(), readPref('ccs-review', 0)))
-  const [perk, setPerk] = useState<string | null>(null)
+  const [perks, setPerks] = useState<string[]>([])
   const go = (id: CharId) => {
+    if (!unlocked(id)) return
     writePref('ccs-review', review)
-    onPick(id, { reviewLevel: review, perk })
+    onPick(id, { reviewLevel: review, perks })
+  }
+  const choose = (id: CharId) => {
+    setSel(id)
+    setPerks([])
   }
   const ch = CHARACTERS[sel]
   const signature = [...new Set(ch.deck.filter((id) => id !== 'ping' && id !== 'insulate'))]
@@ -32,16 +38,17 @@ export function CharSelect({ onPick, onBack }: { onPick: (id: CharId, opts: RunO
           return (
             <button
               key={id}
-              className={`cs-slot ${sel === id ? 'active' : ''}`}
+              className={`cs-slot ${sel === id ? 'active' : ''} ${unlocked(id) ? '' : 'locked'}`}
               style={{ ['--accent' as string]: c.color, animationDelay: `${i * 0.1}s` }}
-              onClick={() => setSel(id)}
+              onClick={() => choose(id)}
               onDoubleClick={() => go(id)}
               aria-pressed={sel === id}
             >
               <span className="cs-glow" aria-hidden />
               <Portrait id={c.portrait} size={165} />
-              <b>{c.name}</b>
-              <span className="muted small">{c.title}</span>
+              <b>{unlocked(id) ? c.name : '???'}</b>
+              <span className="muted small">{unlocked(id) ? c.title : 'Locked'}</span>
+              {!unlocked(id) && <span className="cs-lock">🔒</span>}
             </button>
           )
         })}
@@ -78,15 +85,19 @@ export function CharSelect({ onPick, onBack }: { onPick: (id: CharId, opts: RunO
       </div>
       <div className="cs-options">
         <ReviewPicker value={review} onChange={setReview} />
-        <PerkPicker value={perk} onChange={setPerk} />
+        {unlocked(sel) && <PerkPicker character={sel} value={perks} onChange={setPerks} />}
       </div>
       <div className="actions">
         <button className="btn ghost" onClick={onBack}>
           Back
         </button>
-        <button className="btn primary big" onClick={() => go(sel)}>
-          Clock in as {ch.name}
-        </button>
+        {unlocked(sel) ? (
+          <button className="btn primary big" onClick={() => go(sel)}>
+            Clock in as {ch.name}
+          </button>
+        ) : (
+          <div className="cs-locked-hint">🔒 {characterUnlockHint(sel)}</div>
+        )}
       </div>
     </div>
   )

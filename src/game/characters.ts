@@ -22,7 +22,7 @@ export const CHARACTERS: Record<CharId, CharacterDef> = {
     id: 'fw',
     name: 'Firmware Developer',
     title: 'Keeper of the Devicetree',
-    hp: 75,
+    hp: 80,
     relic: 'jlink',
     deck: basics('printf', 'breakpoint'),
     blurb: 'Writes C for devices that sleep more than you do. Fluent in Zephyr, Kconfig and quiet despair.',

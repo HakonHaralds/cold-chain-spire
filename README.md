@@ -17,7 +17,8 @@ The first run shows a short click-away tutorial per screen; "Replay tutorial" on
 
 Dev shortcuts: `?gallery` shows every character; `?fight=boss_cto&act=2&char=hw&comp=office_dog` jumps
 straight into a fight; `?setting=wroclaw` previews a backdrop.
-Balance check: `npx tsx scripts/simulate.ts` (greedy bot vs every elite and boss).
+Balance checks: `npx tsx scripts/balance.ts` (bot win rates per character, companion, Rewrite, perk and
+Performance Review level) and `npx tsx scripts/events-ev.ts` (expected value of every event option).
 
 ## Systems
 
@@ -27,7 +28,10 @@ Balance check: `npx tsx scripts/simulate.ts` (greedy bot vs every elite and boss
   costs 1 less, but shuffles a Bug into your draw pile when played).
 - **OKRs:** choose one quarterly objective per act; it pays out the moment you hit it.
 - **Tokens:** the currency, in thousands (start with 99k).
-- **Career ladder:** XP from every run unlocks titles, companions and onboarding perks.
+- **Characters unlock by playing:** start as the Firmware Developer; beat the Act 1 boss with a character
+  (or play 3 runs with them) to unlock the next one.
+- **Onboarding perks per character:** each win with a character unlocks the next perk on their ladder of 8.
+- **Career ladder:** XP from every run unlocks titles, companions, permanent benefits and extra perk slots.
 - **Performance Reviews:** 10 stacking difficulty levels, unlocked by career level 3 or your first win.
 - **Achievements:** 81, with an unlock banner; browse them in the Compendium along with enemies
   (and their heard quotes), cards and relics.

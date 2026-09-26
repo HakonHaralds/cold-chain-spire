@@ -2678,3 +2678,29 @@ kbd {
     filter: brightness(2.5) sepia(1) hue-rotate(-30deg) blur(6px);
   }
 }
+
+/* locked characters */
+.cs-slot.locked .portrait {
+  filter: brightness(0) drop-shadow(0 0 8px rgba(92, 214, 206, 0.4));
+  opacity: 0.8;
+}
+.cs-lock {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 38px;
+}
+.cs-locked-hint {
+  max-width: 520px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px dashed var(--gold);
+  color: #ffe08a;
+  background: rgba(0, 0, 0, 0.4);
+}
+.perk.locked {
+  opacity: 0.5;
+  border-style: dashed;
+  cursor: help;
+}

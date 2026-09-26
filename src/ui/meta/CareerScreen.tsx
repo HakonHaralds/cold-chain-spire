@@ -1,10 +1,11 @@
-import { CAREER, companionUnlocked, levelProgress, PERK, reviewAvailable, type Unlock } from '../../meta/career'
+import { CAREER, CHAR_ORDER, characterName, characterUnlocked, characterUnlockHint, companionUnlocked, levelProgress, PERK, PERK_LADDER, perkSlots, reviewAvailable, type Unlock } from '../../meta/career'
 import { loadMeta } from '../../meta/profile'
 import { REVIEW_LEVELS } from '../../meta/review'
 import { ACHIEVEMENTS } from '../../meta/achievements'
 import './meta.css'
 
-const unlockIcon = (u: Unlock) => (u.kind === 'perk' ? PERK[u.id]?.icon ?? '🎁' : u.kind === 'companion' ? '🧑‍🤝‍🧑' : u.kind === 'review' ? '⚖️' : '✨')
+const unlockIcon = (u: Unlock) =>
+  u.kind === 'perk' ? PERK[u.id]?.icon ?? '🎁' : u.kind === 'companion' ? '🧑‍🤝‍🧑' : u.kind === 'review' ? '⚖️' : u.kind === 'benefit' ? '💼' : u.kind === 'slot' ? '➕' : u.kind === 'character' ? '🧑‍🔧' : '✨'
 
 export function CareerScreen({ onBack }: { onBack: () => void }) {
   const m = loadMeta()
@@ -75,6 +76,39 @@ export function CareerScreen({ onBack }: { onBack: () => void }) {
                 ))}
               </ul>
             )}
+          </div>
+          <div className="review-status char-section">
+            <div className="overline">Characters · perk slots: {perkSlots()}</div>
+            <ul className="char-progress">
+              {CHAR_ORDER.map((c) => {
+                const open = characterUnlocked(c)
+                const wins = m.charWins[c] ?? 0
+                return (
+                  <li key={c} className={open ? '' : 'locked'}>
+                    <b>
+                      {open ? '' : '🔒 '}
+                      {characterName(c)}
+                    </b>
+                    {open ? (
+                      <span className="muted small">
+                        {wins} win{wins === 1 ? '' : 's'} · {Math.min(wins, PERK_LADDER[c].length)}/{PERK_LADDER[c].length} perks
+                      </span>
+                    ) : (
+                      <span className="muted small">{characterUnlockHint(c)}</span>
+                    )}
+                    {open && (
+                      <span className="perk-ladder">
+                        {PERK_LADDER[c].map((id, i) => (
+                          <span key={id} className={`ladder-perk ${i < wins ? 'got' : i === wins ? 'next' : ''}`} title={`${i < wins ? '' : `Win #${i + 1}: `}${PERK[id].name}: ${PERK[id].desc}`}>
+                            {i <= wins ? PERK[id].icon : '?'}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         </section>
         <section className="panel career-ladder">
