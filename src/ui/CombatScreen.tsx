@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Portrait } from '../art/Portraits'
 import { DEF } from '../game/cards'
-import { canPlay, playCard } from '../game/combat'
-import { attackValue, livingEnemies, STATUS_INFO } from '../game/core'
+import { canPlay, playCard, playCost } from '../game/combat'
+import { attackValue, livingEnemies, st, STATUS_INFO } from '../game/core'
 import { ENEMY, intentOf, shownDamage } from '../game/enemies'
 import type { CardInst, Combat, EnemyInst, Fighter, IntentKind, StatusId } from '../game/types'
 import { Card } from './Card'
@@ -139,6 +139,7 @@ function EnemyView({ e, c, targeting, onTarget, preview, onHover }: { e: EnemyIn
           {def.name}
           {def.title && <span className="fighter-title">{def.title}</span>}
         </div>
+        {e.note && <div className="enemy-note">{e.note}{st(e, 'escape') ? ` · escapes in ${st(e, 'escape')}` : ''}</div>}
         {preview && !e.dead && (
           <div className={`dmg-preview ${preview.lethal ? 'lethal' : ''}`}>
             {preview.lethal ? '☠ ' : '💥 '}
@@ -393,7 +394,13 @@ export function CombatScreen({
           <span>Enemy Turn</span>
         </div>
       )}
-      {c.phase === 'won' && <div className="turn-banner win">Victory!</div>}
+      {c.banner && !intro && (
+        <div key={`b${c.banner.id}`} className="phase-banner">
+          <span>{c.banner.title}</span>
+          <small>{c.banner.text}</small>
+        </div>
+      )}
+      {c.phase === 'won' && (c.enemies.some((e) => e.escaped) ? <div className="turn-banner lose">It got away… with your card.</div> : <div className="turn-banner win">Victory!</div>)}
       {c.phase === 'lost' && <div className="turn-banner lose">You have been restructured…</div>}
 
       {intro && (
@@ -450,6 +457,8 @@ export function CombatScreen({
                   hotkey={i < 10 ? (i + 1) % 10 : undefined}
                   tips={off > 0 ? 'left' : 'right'}
                   dmgMod={dmgMod}
+                  costNow={playCost(c, card)}
+                  frozen={card.frozen}
                 />
               </div>
             )

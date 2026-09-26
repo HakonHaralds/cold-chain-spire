@@ -24,6 +24,10 @@ interface Props {
   diff?: boolean
   /** For un-upgraded cards, add a hover tip describing the upgraded version. */
   showUpgrade?: boolean
+  /** The cost right now, if an effect changes it (e.g. the CFO's Cost Cutting). */
+  costNow?: number
+  /** Frozen by the CFO: shown with an ice overlay, unplayable this turn. */
+  frozen?: boolean
 }
 
 /** Highlight "Deal N damage" numbers that are changed by modifiers: green if higher, red if lower. */
@@ -56,24 +60,31 @@ function withDiff(text: string, base: string) {
 const TYPE_LABEL: Record<string, string> = { attack: 'Attack', skill: 'Skill', power: 'Power', status: 'Status', curse: 'Curse' }
 const CLS_LABEL: Record<string, string> = { fw: 'Firmware', hw: 'Hardware', cal: 'Calibration' }
 
-export function Card({ id, upgraded = false, rewrite = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod, diff, showUpgrade }: Props) {
+export function Card({ id, upgraded = false, rewrite = false, playable = true, selected, onClick, small, price, style, className = '', hotkey, uid, tips = 'right', dmgMod, diff, showUpgrade, costNow, frozen }: Props) {
   const d = DEF[id]
   if (!d) return null
-  const cost = cardCost(id, upgraded, rewrite)
+  const baseCost = cardCost(id, upgraded, rewrite)
+  const cost = costNow ?? baseCost
   const text = d.text(upgraded) + (rewrite ? ' Shuffle a Bug into your draw pile.' : '')
   const kws = [...keywordsIn(text), ...(d.exhaust?.(upgraded) && !/Exhaust/.test(text) ? ['Exhaust'] : [])]
   return (
     <button
       type="button"
       data-uid={uid}
-      className={`card card-${d.type} rarity-${d.rarity} cls-${d.cls} ${rewrite ? 'is-rewrite' : ''} ${small ? 'card-small' : ''} ${selected ? 'selected' : ''} ${playable ? '' : 'unplayable'} ${className}`}
+      className={`card card-${d.type} rarity-${d.rarity} cls-${d.cls} ${rewrite ? 'is-rewrite' : ''} ${small ? 'card-small' : ''} ${selected ? 'selected' : ''} ${playable ? '' : 'unplayable'} ${frozen ? 'is-frozen' : ''} ${className}`}
       onClick={onClick}
       style={style}
       title={CLS_LABEL[d.cls] ? `${CLS_LABEL[d.cls]} card` : undefined}
       aria-label={`${d.name}${rewrite ? ' rewritten' : upgraded ? ' upgraded' : ''}, cost ${cost}. ${text}`}
     >
       <span className="card-shine" aria-hidden />
-      {cost >= 0 && <span className={`card-cost ${rewrite ? 'rw' : upgraded && d.costUp !== undefined ? 'up' : ''}`}>{cost}</span>}
+      {cost >= 0 && <span className={`card-cost ${cost > baseCost ? 'taxed' : rewrite ? 'rw' : upgraded && d.costUp !== undefined ? 'up' : ''}`} title={cost > baseCost ? 'Cost Cutting: +1 while the CFO has Block' : undefined}>{cost}</span>}
+      {frozen && (
+        <span className="card-frozen" aria-hidden>
+          <span>🧊 FROZEN</span>
+          <small>Budget Freeze: can't be played this turn</small>
+        </span>
+      )}
       {rewrite && <span className="card-ribbon">REWRITE</span>}
       {hotkey !== undefined && <span className="card-hotkey">{hotkey}</span>}
       <span className={`card-name ${rewrite ? 'rw' : upgraded ? 'up' : ''}`}>

@@ -110,6 +110,19 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'boss_cto', name: 'Last Call', desc: 'Defeat the CTO.', icon: '🍺', tier: 'silver', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_cto') },
   { id: 'boss_ceo', name: 'Fully Vested', desc: 'Defeat the CEO.', icon: '🦺', tier: 'gold', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_ceo') },
   { id: 'boss_peter', name: 'Salt of the Earth', desc: 'Defeat Peter, the Saltpeter Guardian.', icon: '🧂', tier: 'gold', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_peter') },
+  { id: 'boss_forklift', name: 'Parked', desc: 'Defeat Forklift Frank.', icon: '🚜', tier: 'gold', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_forklift') },
+  { id: 'boss_cfo', name: 'Thawed', desc: 'Defeat the CFO.', icon: '🧊', tier: 'gold', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_cfo') },
+  { id: 'boss_audit', name: 'Audit Closed', desc: 'Defeat the Global Audit.', icon: '📑', tier: 'gold', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_audit') },
+  {
+    id: 'forklift_slow', name: 'Speed Limit 10', desc: 'Defeat Forklift Frank without him ever reaching 10 Speed.', icon: '🐢', tier: 'silver', category: 'Bosses', on: W,
+    test: (x) => bossWin(x, 'boss_forklift') && x.combat!.enemies.some((e) => e.defId === 'boss_forklift' && (e.flags.maxSpeed ?? 0) < 10),
+  },
+  { id: 'cfo_budget', name: 'Under Budget', desc: 'Defeat the CFO without losing a single token to him.', icon: '💶', tier: 'silver', category: 'Bosses', on: W, test: (x) => bossWin(x, 'boss_cfo') && x.combat!.goldStolen === 0 },
+  {
+    id: 'audit_clean', name: 'Clean Audit', desc: 'Defeat the Global Audit without receiving a single Finding.', icon: '✅', tier: 'platinum', category: 'Bosses', on: W, hidden: true,
+    test: (x) => bossWin(x, 'boss_audit') && x.combat!.enemies.some((e) => e.defId === 'boss_audit' && !(e.flags.findings ?? 0)),
+  },
+  { id: 'recruiter_stop', name: 'Counter-Offer', desc: 'Defeat the Recruiter before it escapes with your card.', icon: '🤝', tier: 'bronze', category: 'Combat', on: W, test: (x) => won(x) && x.combat!.enemies.some((e) => e.defId === 'recruiter' && e.dead && !e.escaped) },
   {
     id: 'pc_nopip', name: 'No PIP Required', desc: 'Defeat People & Culture without a single PIP left in your deck.', icon: '📉', tier: 'gold', category: 'Bosses', hidden: true, on: W,
     test: (x) => bossWin(x, 'boss_pc') && ![...x.combat!.hand, ...x.combat!.draw, ...x.combat!.discard].some((c) => c.id === 'pip'),

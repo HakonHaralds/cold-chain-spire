@@ -23,6 +23,17 @@ export const relicEvents: {
   hpLoss: (c: Combat, n: number) => void
 } = { exhaust: () => {}, enemyDeath: () => {}, hpLoss: () => {} }
 
+/** Enemy event hooks, filled in by enemies.ts (kept here to avoid a circular import). */
+export const enemyEvents: {
+  /** Player-sourced damage to an enemy: `amount` counts HP and Block removed; `blockBroken` when Block hit 0. */
+  damaged: (c: Combat, e: EnemyInst, amount: number, blockBroken: boolean) => void
+} = { damaged: () => {} }
+
+/** A one-off centre-screen banner (e.g. a boss changing phase). */
+export function banner(c: Combat, title: string, text: string) {
+  c.banner = { id: seq++, title, text }
+}
+
 /** Combat stats (created lazily so combats restored from older saves still work). */
 export const cstats = (c: Combat) => (c.stats ??= emptyCombatStats())
 
@@ -128,7 +139,11 @@ export function applyDamage(c: Combat, target: string, dmg: number, source?: str
       relicEvents.hpLoss(c, rest)
     }
   }
-  if ((source === 'player' || source === 'thorns-player') && target !== 'player') cstats(c).maxHit = Math.max(cstats(c).maxHit, Math.min(dmg, blockBefore) + rest)
+  if ((source === 'player' || source === 'thorns-player') && target !== 'player') {
+    cstats(c).maxHit = Math.max(cstats(c).maxHit, Math.min(dmg, blockBefore) + rest)
+    const removed = Math.min(dmg, blockBefore) + rest
+    if (removed > 0 && !(t as EnemyInst).dead) enemyEvents.damaged(c, t as EnemyInst, removed, blockBefore > 0 && t.block === 0)
+  }
   if (target !== 'player' && t.hp <= 0 && !(t as EnemyInst).dead) {
     ;(t as EnemyInst).dead = true
     t.block = 0
@@ -180,6 +195,7 @@ export function gainBlock(c: Combat, target: string, base: number, raw = false) 
     n += st(f, 'dexterity')
     if (st(f, 'frail') > 0) n = Math.floor(n * 0.75)
   }
+  if (target === 'player' && c.rules?.blockMul !== undefined) n = Math.floor(n * c.rules.blockMul)
   n = Math.max(0, n)
   if (n === 0) return
   f.block += n
@@ -225,8 +241,35 @@ export function drawCards(c: Combat, n: number) {
       addFloat(c, 'player', '-1 Energy (Hangover)', 'status')
       cardTrigger(c, 'hangover', '−1 Energy')
     }
+    if (card.id === 'pc_load_letter') {
+      // Paper jam: another random card in hand gets discarded.
+      const others = c.hand.filter((h) => h.uid !== card.uid && h.id !== 'pc_load_letter')
+      if (others.length) {
+        const victim = pick(others)
+        c.hand.splice(c.hand.indexOf(victim), 1)
+        c.discard.push(victim)
+        cardTrigger(c, 'pc_load_letter', 'Paper jam! A card is discarded')
+      }
+    }
+    if (card.id === 'hiring_freeze') {
+      if (freezeRandomCard(c, card.uid)) cardTrigger(c, 'hiring_freeze', 'A card is frozen')
+    }
   }
 }
+
+/** Freeze a random playable card in hand for the rest of the turn. Returns whether one was frozen. */
+export function freezeRandomCard(c: Combat, exceptUid?: string): boolean {
+  const pool = c.hand.filter((h) => h.uid !== exceptUid && !h.frozen && !['status', 'curse'].includes(cardType(h.id)))
+  if (!pool.length) return false
+  const card = pick(pool)
+  card.frozen = true
+  addFloat(c, 'player', '🧊 Card frozen', 'status')
+  return true
+}
+
+/** Card types by id, registered by cards.ts (avoids a circular import). */
+export const cardTypes: Record<string, string> = {}
+const cardType = (id: string) => cardTypes[id] ?? 'skill'
 
 export function addCards(c: Combat, id: string, where: 'draw' | 'discard' | 'hand', n: number) {
   for (let i = 0; i < n; i++) {
@@ -264,6 +307,15 @@ export const STATUS_INFO: Record<StatusId, { name: string; icon: string; desc: s
   tesla: { name: 'Tesla Coil', icon: '🌩️', desc: 'At the end of your turn, deal damage equal to your Charge to ALL enemies.' },
   certificate: { name: 'Traceable Certificate', icon: '📑', desc: 'At the start of your turn, gain Block from the total Excursion on all enemies (max 15).' },
   hysteresis: { name: 'Hysteresis', icon: '➰', desc: 'Excursion on enemies no longer decreases.' },
+  speed: { name: 'Speed', icon: '💨', desc: 'Speed X. Every 3rd turn Frank RAMs you for 12 + 3 per Speed. Each 6 Block you hold when he acts knocks off 1 Speed. Gains 2 Speed each turn.' },
+  layers: { name: 'Pallet Layers', icon: '🪵', desc: 'X layers left. Each time you break its Block it loses a layer and you draw 1 card. At 0 layers it falls apart (Vulnerable).' },
+  clout: { name: 'Clout', icon: '📱', desc: 'Gains 1 Strength (Followers) whenever you play an Attack. Loses 1 when you play a Skill.' },
+  costcut: { name: 'Cost Cutting', icon: '✂️', desc: 'While this enemy has Block, your cards that cost 2 or more cost 1 more. Break the Block to lift it. Also freezes a card in your hand each turn.' },
+  escape: { name: 'Headhunting', icon: '🏃', desc: 'Escapes with the card it is after in X turns. Defeat it first!', debuff: true },
+  docReview: { name: 'Documentation Review', icon: '📑', desc: 'Phase 1: your Block gains are halved. X turns until the phase closes with 2 Findings.' },
+  traceability: { name: 'Traceability Check', icon: '🔗', desc: 'Phase 2: playing a card you already played this turn costs you 3 HP. X turns until the phase closes with 2 Findings.' },
+  tempMapping: { name: 'Temperature Mapping', icon: '🌡️', desc: 'Phase 3: Excursion damage on you is doubled. The final phase.' },
+  auditGate: { name: 'Phase Gate', icon: '🚪', desc: 'Deal X more damage to the Audit this turn to force it into its next phase.' },
 }
 
 // ---------- class mechanics ----------

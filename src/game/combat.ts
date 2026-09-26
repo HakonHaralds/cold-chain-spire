@@ -1,5 +1,5 @@
 import { DEF, cardCost } from './cards'
-import { cardTrigger, relicEvents, addCards, addStatus, cstats, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
+import { addFloat, cardTrigger, relicEvents, addCards, addStatus, cstats, anim, applyDamage, charge, drawCards, exhaustBugs, gainBlock, gainCharge, livingEnemies, log, loseHp, shuffle, st, totalExcursion } from './core'
 import { ENEMY, intentOf, mkEnemy, speak } from './enemies'
 import { companionAct } from './companions'
 import { relicEnergy, relicsCardPlayed, relicsCombatEnd, runRelics } from './relics'
@@ -68,7 +68,7 @@ function beginPlayerTurn(c: Combat): Combat {
   delete p.statuses.energyDown
   if (st(p, 'ota')) addStatus(c, 'player', 'strength', st(p, 'ota'))
   if (st(p, 'excursion')) {
-    loseHp(c, 'player', st(p, 'excursion'))
+    loseHp(c, 'player', st(p, 'excursion') * (c.rules?.excursionMul ?? 1))
     addStatus(c, 'player', 'excursion', -1)
   }
   if (st(p, 'fleet')) for (const e of livingEnemies(c)) addStatus(c, e.uid, 'excursion', st(p, 'fleet'))
@@ -78,6 +78,8 @@ function beginPlayerTurn(c: Combat): Combat {
   let n = 5 + st(p, 'sprint') + (c.relics.includes('corner_office') ? 1 : 0)
   if (c.turn === 1 && c.relics.includes('standing_desk')) n += 2
   drawCards(c, n)
+  c.playedThisTurn = []
+  for (const e of livingEnemies(c)) ENEMY[e.defId].onPlayerTurnStart?.(e, c)
   runRelics(c, 'onTurnStart')
   companionAct(c, 'start')
   checkEnd(c)
@@ -89,10 +91,17 @@ function checkEnd(c: Combat) {
   else if (livingEnemies(c).length === 0) c.phase = 'won'
 }
 
+/** What a card costs right now, including enemy effects (the CFO's Cost Cutting). */
+export function playCost(c: Combat, card: CardInst): number {
+  const base = cardCost(card.id, card.upgraded, card.rewrite)
+  if (base >= 2 && livingEnemies(c).some((e) => st(e, 'costcut') > 0 && e.block > 0)) return base + 1
+  return base
+}
+
 export function canPlay(c: Combat, card: CardInst): boolean {
   const d = DEF[card.id]
-  if (c.phase !== 'player' || d.unplayable) return false
-  return cardCost(card.id, card.upgraded, card.rewrite) <= c.energy
+  if (c.phase !== 'player' || d.unplayable || card.frozen) return false
+  return playCost(c, card) <= c.energy
 }
 
 export function playCard(prev: Combat, cardUid: string, target: string | null): Combat {
@@ -106,9 +115,16 @@ export function playCard(prev: Combat, cardUid: string, target: string | null): 
     const t = c.enemies.find((e) => e.uid === target && !e.dead)
     if (!t) return prev
   }
-  c.energy -= cardCost(card.id, card.upgraded, card.rewrite)
+  c.energy -= playCost(c, card)
   c.hand.splice(idx, 1)
   c.speech = null
+  // Global Audit, Traceability Check: replaying the same card in a turn costs HP.
+  const played = (c.playedThisTurn ??= [])
+  if (c.rules?.repeatPenalty && played.includes(card.id)) {
+    loseHp(c, 'player', c.rules.repeatPenalty)
+    addFloat(c, 'player', 'Traceability!', 'status')
+  }
+  played.push(card.id)
 
   let times = 1
   let duck = false
@@ -148,6 +164,7 @@ export function playCard(prev: Combat, cardUid: string, target: string | null): 
     } else c.discard.push(card)
   }
   relicsCardPlayed(c, card)
+  for (const e of livingEnemies(c)) ENEMY[e.defId].onPlayerCardPlayed?.(e, c, card, d.type)
   checkEnd(c)
   return c
 }
@@ -174,6 +191,10 @@ export function endPlayerTurn(prev: Combat): Combat {
       cardTrigger(c, 'malware', '−1 HP')
       loseHp(c, 'player', 1)
     }
+    if (card.id === 'finding') {
+      cardTrigger(c, 'finding', '−2 HP')
+      loseHp(c, 'player', 2)
+    }
   }
   if (c.relics.includes('jlink')) exhaustBugs(c, ['hand'], 1)
   if (st(p, 'watchdog')) {
@@ -188,6 +209,7 @@ export function endPlayerTurn(prev: Combat): Combat {
   delete p.statuses.tempStrength
   delete p.statuses.doubleTap
   for (const card of c.hand) {
+    delete card.frozen
     if (DEF[card.id].ethereal) {
       c.exhaust.push(card)
       cstats(c).cardsExhausted += 1
@@ -209,8 +231,9 @@ export function enemyAct(prev: Combat, enemyUid: string): Combat {
   if (!e || e.dead || c.phase !== 'enemy') return prev
   e.block = 0
   if (st(e, 'excursion')) {
-    loseHp(c, e.uid, Math.round(st(e, 'excursion') * (c.relics.includes('cold_room_door') ? 1.5 : 1)))
-    if (!st(c.player, 'hysteresis')) addStatus(c, e.uid, 'excursion', -1)
+    const edef = ENEMY[e.defId]
+    loseHp(c, e.uid, Math.round(st(e, 'excursion') * (c.relics.includes('cold_room_door') ? 1.5 : 1) * (edef.excursionTaken ?? 1)))
+    if (!st(c.player, 'hysteresis')) addStatus(c, e.uid, 'excursion', -Math.min(st(e, 'excursion'), edef.excursionDecay ?? 1))
     if (e.dead) {
       cstats(c).excursionKills += 1
       checkEnd(c)
@@ -218,6 +241,11 @@ export function enemyAct(prev: Combat, enemyUid: string): Combat {
     }
   }
   const def = ENEMY[e.defId]
+  def.beforeAct?.(e, c)
+  if (e.dead || e.escaped) {
+    checkEnd(c)
+    return c
+  }
   const move = def.moves[e.move]
   if (intentOf(e, c).damage !== undefined) anim(c, e.uid, 'lunge-left')
   else anim(c, e.uid, 'pulse')
@@ -225,6 +253,7 @@ export function enemyAct(prev: Combat, enemyUid: string): Combat {
   move.act(c, e)
   e.history.push(e.move)
   e.turn += 1
+  if (!e.dead) def.afterAct?.(e, c)
   if (st(e, 'metallicize') && !e.dead) gainBlock(c, e.uid, st(e, 'metallicize'), true)
   if (st(e, 'ritual') && e.turn > 1) addStatus(c, e.uid, 'strength', st(e, 'ritual'))
   for (const s of ENEMY_TICK) if (st(e, s)) {
@@ -245,9 +274,11 @@ export function finishEnemyPhase(prev: Combat): Combat {
 export function applyCombatResult(run: Run, c: Combat): Run {
   let hp = c.player.hp
   if (hp > 0 && run.relics.includes('saga_card')) hp = Math.min(run.maxHp, hp + 6)
+  const stolen = new Set(c.stolenCards ?? [])
   return relicsCombatEnd(
     {
       ...run,
+      deck: stolen.size ? run.deck.filter((d) => !stolen.has(d.uid)) : run.deck,
       hp,
       gold: Math.max(0, run.gold - c.goldStolen),
       stats: foldStats(run, c),
@@ -263,7 +294,7 @@ function foldStats(run: Run, c: Combat): Run['stats'] {
   const won = c.phase === 'won'
   return {
     ...s,
-    enemiesDefeated: s.enemiesDefeated + c.enemies.filter((e) => e.dead).length,
+    enemiesDefeated: s.enemiesDefeated + c.enemies.filter((e) => e.dead && !e.escaped).length,
     damageDealt: s.damageDealt + c.dmgDealt,
     fights: s.fights + (won ? 1 : 0),
     elitesDefeated: s.elitesDefeated + (won && c.kind === 'elite' ? 1 : 0),

@@ -97,8 +97,14 @@ function fight(ch: CharId, ids: string[], extra: number, act: number, hpFrac: nu
     for (const e of c.enemies.filter((x) => !x.dead).map((x) => x.uid)) c = enemyAct(c, e)
     c = finishEnemyPhase(c)
   }
+  // An enemy escaping (the Recruiter) ends the fight but is not a win.
+  if (c.phase === 'won' && c.enemies.some((e) => e.escaped)) {
+    escapes++
+    return false
+  }
   return c.phase === 'won'
 }
+let escapes = 0
 
 const FIGHTS: [string, string[], number, number, number, Combat['kind']][] = [
   ['Auditor (A1e)', ['lead_auditor'], 4, 1, 0.93, 'elite'],
@@ -126,7 +132,37 @@ const rate = (ch: CharId, f: (typeof FIGHTS)[number], s: Scenario) => {
 }
 
 if (process.env.MODE === 'relics') relicMode()
+else if (process.env.MODE === 'bosses') bossMode()
 else matrix()
+
+/** New bosses/elites next to the existing ones they share a pool with (baseline scenario, all characters). */
+function bossMode() {
+  const F: (typeof FIGHTS)[number][] = [
+    ['Auditor (A1e)', ['lead_auditor'], 4, 1, 0.93, 'elite'],
+    ['Golem (A1e)', ['pallet_golem'], 4, 1, 0.93, 'elite'],
+    ['Printer (A1e)', ['office_printer'], 4, 1, 0.93, 'elite'],
+    ['P&C (A1)', ['boss_pc'], 7, 1, 0.87, 'boss'],
+    ['Forklift (A1)', ['boss_forklift'], 7, 1, 0.87, 'boss'],
+    ['Roche VP (A2e)', ['roche_vp'], 9, 2, 0.93, 'elite'],
+    ['Recruiter (A2e)', ['recruiter'], 9, 2, 0.93, 'elite'],
+    ['CTO (A2)', ['boss_cto'], 12, 2, 1, 'boss'],
+    ['CFO (A2)', ['boss_cfo'], 12, 2, 1, 'boss'],
+    ['Inspector (A3e)', ['fda_inspector'], 15, 3, 1, 'elite'],
+    ['Influencer (A3e)', ['influencer'], 15, 3, 1, 'elite'],
+    ['Swarm (A3e)', ['junior_consultant', 'junior_consultant', 'consulting_partner'], 15, 3, 1, 'elite'],
+    ['CEO (A3)', ['boss_ceo'], 17, 3, 1, 'boss'],
+    ['Audit (A3)', ['boss_audit'], 17, 3, 1, 'boss'],
+  ]
+  const only = process.env.ONLY?.split(',')
+  const list = only ? F.filter((f) => only.some((o) => f[0].toLowerCase().includes(o.toLowerCase()))) : F
+  console.log('fight'.padEnd(18) + CHARACTER_IDS.map((c) => c.padStart(8)).join('') + '     avg')
+  for (const f of list) {
+    escapes = 0
+    const row = CHARACTER_IDS.map((ch) => rate(ch, f, { name: 'baseline' }))
+    const avg = Math.round(row.reduce((a, b) => a + b, 0) / row.length)
+    console.log(f[0].padEnd(18) + row.map((v) => `${v}%`.padStart(8)).join('') + `${avg}%`.padStart(8) + (escapes ? `   (escapes: ${escapes}/${N * CHARACTER_IDS.length})` : ''))
+  }
+}
 
 function relicMode() {
   const fights = FIGHTS.filter((f) => ['P&C (A1)', 'Roche VP (A2e)', 'CTO (A2)', 'CEO (A3)', 'Peter (A4)'].includes(f[0]))

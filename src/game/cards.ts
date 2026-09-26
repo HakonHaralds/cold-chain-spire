@@ -2,6 +2,7 @@ import {
   addCards,
   addStatus,
   attack,
+  cardTypes,
   charge,
   consumeCharge,
   countBugs,
@@ -849,9 +850,22 @@ const defs: CardDef[] = [
     id: 'malware', name: 'Malware', type: 'curse', rarity: 'special', cls: 'special', cost: -1, icon: '💾', target: 'none', unplayable: true,
     text: () => 'Unplayable. At end of turn, lose 1 HP.',
   },
+  {
+    id: 'pc_load_letter', name: 'PC LOAD LETTER', type: 'status', rarity: 'special', cls: 'special', cost: -1, icon: '🖨️', target: 'none', unplayable: true, ethereal: true,
+    text: () => 'Unplayable. Ethereal. When drawn, discard another random card from your hand. (What does it even mean?)',
+  },
+  {
+    id: 'hiring_freeze', name: 'Hiring Freeze', type: 'status', rarity: 'special', cls: 'special', cost: -1, icon: '🥶', target: 'none', unplayable: true, ethereal: true,
+    text: () => 'Unplayable. Ethereal. When drawn, freeze another random card in your hand for this turn.',
+  },
+  {
+    id: 'finding', name: 'Audit Finding', type: 'curse', rarity: 'special', cls: 'special', cost: -1, icon: '🔎', target: 'none', unplayable: true,
+    text: () => 'Unplayable. At end of turn, lose 2 HP. Response due in 30 days.',
+  },
 ]
 
 export const DEF: Record<string, CardDef> = Object.fromEntries(defs.map((d) => [d.id, d]))
+for (const d of defs) cardTypes[d.id] = d.type
 export const ALL_CARDS = defs
 
 export const cardCost = (id: string, up: boolean, rewrite = false) => {

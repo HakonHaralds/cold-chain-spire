@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import { Person } from './Person'
 import { Duck, FriendlyQA, Intern, ITGuy, OfficeDog, SummerStudent } from './Companions'
+import { CFO as CfoArt, ConsultingPartner, ForkliftFrank, GlobalAudit, Influencer, JuniorConsultant, OfficePrinter, PalletGolem, PaperMinion, Recruiter } from './NewEnemies'
 
 /* ---------- reusable hair ---------- */
 const shortHair = (c: string) => <path d="M68,68 Q66,30 100,28 Q134,30 132,68 Q126,46 112,44 Q100,50 86,44 Q72,48 68,68 Z" fill={c} />
@@ -888,6 +889,16 @@ const ART: Record<string, () => ReactNode> = {
   yes_man: YesMan,
   boss_ceo: CEO,
   boss_peter: Peter,
+  boss_forklift: ForkliftFrank,
+  boss_cfo: CfoArt,
+  boss_audit: GlobalAudit,
+  pallet_golem: PalletGolem,
+  office_printer: OfficePrinter,
+  paper_minion: PaperMinion,
+  recruiter: Recruiter,
+  influencer: Influencer,
+  consulting_partner: ConsultingPartner,
+  junior_consultant: JuniorConsultant,
   comp_intern: Intern,
   comp_duck: Duck,
   comp_qa: FriendlyQA,

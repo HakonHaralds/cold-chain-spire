@@ -2784,3 +2784,79 @@ kbd {
 .tier-minion .fighter-name {
   font-size: 12px;
 }
+
+
+/* ---------- boss mechanics: frozen cards, taxed costs, notes, phase banner ---------- */
+.card.is-frozen {
+  filter: saturate(0.3) brightness(0.9) hue-rotate(160deg);
+}
+.card-frozen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgba(210, 240, 255, 0.55), rgba(120, 190, 255, 0.35) 60%, rgba(230, 250, 255, 0.6));
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.9);
+  color: #04304f;
+  text-align: center;
+  pointer-events: none;
+}
+.card-frozen span {
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px #fff;
+}
+.card-frozen small {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 8px;
+}
+.card-cost.taxed {
+  background: radial-gradient(circle at 35% 30%, #ffd0d0, #ff5a5a 45%, #9a1a1a);
+  color: #fff;
+  animation: pop 300ms ease both;
+}
+.enemy-note {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffd166;
+  margin: 1px 0 2px;
+  text-shadow: 0 1px 2px #000;
+}
+.phase-banner {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: 24%;
+  z-index: 34;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(64, 30, 90, 0.94) 25%, rgba(64, 30, 90, 0.94) 75%, transparent);
+  animation: sweepBanner 2.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.phase-banner span {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ffe08a;
+}
+.phase-banner small {
+  font-size: 14px;
+  color: #e8dcff;
+}
+
+/* The gallery lives inside the fixed-size game root: let it scroll. */
+.screen-enter > .gallery {
+  flex: 1;
+  min-height: 0;
+}

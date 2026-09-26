@@ -4,7 +4,7 @@ import { CHARACTERS } from './game/characters'
 import { applyCombatResult, endPlayerTurn, enemyAct, finishEnemyPhase, playCard, startCombat } from './game/combat'
 import { DEFAULT_COMPANIONS, levelUpCompanion, newCompanion } from './game/companions'
 import { mkCard, pick, rand, shuffle } from './game/core'
-import { ENCOUNTERS } from './game/enemies'
+import { bossFor, ENCOUNTERS, rollBosses } from './game/enemies'
 import { EVENTS, eventsFor } from './game/events'
 import { DEFAULT_SETTINGS, generateMap, rollSettings } from './game/map'
 import { claimOkr, rollOkrs, startOkr } from './game/okrs'
@@ -80,6 +80,7 @@ function newRun(character: CharId, reviewLevel = 0): Run {
     okr: null,
     reviewLevel,
     startedAt: Date.now(),
+    bosses: rollBosses(),
   }
 }
 
@@ -244,7 +245,7 @@ export default function App() {
         fight(pick(enc.elite), 'elite')
         break
       case 'boss':
-        fight([enc.boss], 'boss')
+        fight([bossFor(r)], 'boss')
         break
       case 'rest':
         setScreen({ kind: 'rest' })
@@ -343,7 +344,7 @@ export default function App() {
       const won = combat.phase === 'won'
       let r = applyCombatResult(run, combat)
       setCombat(null)
-      combat.enemies.filter((e) => e.dead).forEach((e) => recordEnemyDefeated(e.defId))
+      combat.enemies.filter((e) => e.dead && !e.escaped).forEach((e) => recordEnemyDefeated(e.defId))
       toast(checkAchievements('combatEnd', { run: r, combat, won }))
       if (!won) {
         r = { ...r, hp: 0 }
@@ -360,8 +361,10 @@ export default function App() {
       }
       const mul = (r.relics.includes('stock_options') ? 0.5 : 1) * rewardTokenMul(r.reviewLevel) * relicMods(r.relics).tokenMul
       const base = combat.kind === 'boss' ? 90 : combat.kind === 'elite' ? rand(28, 38) : rand(12, 22)
-      const gold = Math.round((base * K * mul) / 1000) * 1000
-      const relic = combat.kind === 'elite' ? rollRelic(r, 'elite') : null
+      // An enemy escaped (the Recruiter): half the tokens and no elite relic.
+      const escaped = combat.enemies.some((e) => e.escaped)
+      const gold = Math.round((base * K * mul * (escaped ? 0.5 : 1)) / 1000) * 1000
+      const relic = combat.kind === 'elite' && !escaped ? rollRelic(r, 'elite') : null
       const bossRelics = combat.kind === 'boss' ? rollBossRelics(r, 3) : null
       const cards = rollCardRewards(Math.max(1, cardRewardCount(r.reviewLevel) + (combat.kind !== 'normal' ? benefitExtraEliteCard() : 0) + relicMods(r.relics).cardChoice), combat.kind !== 'normal', r.character)
       recordCardsSeen(cards)

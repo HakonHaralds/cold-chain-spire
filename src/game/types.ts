@@ -29,6 +29,15 @@ export type StatusId =
   | 'tesla'
   | 'certificate'
   | 'hysteresis'
+  | 'speed'
+  | 'layers'
+  | 'clout'
+  | 'costcut'
+  | 'escape'
+  | 'docReview'
+  | 'traceability'
+  | 'tempMapping'
+  | 'auditGate'
 
 export type Statuses = Partial<Record<StatusId, number>>
 
@@ -45,6 +54,8 @@ export interface CardInst {
   upgraded: boolean
   /** Branching upgrade (M8): "Rewrite" = upgraded, costs 1 less, shuffles a Bug into your draw pile when played. */
   rewrite?: boolean
+  /** Frozen by the CFO's Budget Freeze: unplayable until the end of this turn. */
+  frozen?: boolean
 }
 
 /** Per-combat counters (updated by the engine; read by achievements and OKRs). */
@@ -141,6 +152,12 @@ export interface EnemyInst extends Fighter {
   turn: number
   flags: Record<string, number>
   dead: boolean
+  /** Left the fight without dying (e.g. the Recruiter escaping). Counts as gone, not defeated. */
+  escaped?: boolean
+  /** Short free-text note shown under the enemy's name (e.g. which card the Recruiter is after). */
+  note?: string
+  /** String data for enemy mechanics (e.g. the uid of the card being headhunted). */
+  data?: Record<string, string>
 }
 
 export interface FloatText {
@@ -194,6 +211,14 @@ export interface Combat {
   companion: CompanionState | null
   /** Per-combat relic counters (optional for older saves). */
   relicState?: Record<string, number>
+  /** Combat-wide rule changes from enemy mechanics (e.g. the Global Audit's phases). */
+  rules?: { blockMul?: number; repeatPenalty?: number; excursionMul?: number }
+  /** Card ids played this player turn (for the Audit's Traceability Check). */
+  playedThisTurn?: string[]
+  /** Run-deck card uids taken by enemies (removed from the deck after the fight). */
+  stolenCards?: string[]
+  /** One-off centre-screen banner (e.g. a boss changing phase). */
+  banner?: { id: number; title: string; text: string }
 }
 
 export type NodeType = 'combat' | 'elite' | 'rest' | 'shop' | 'event' | 'treasure' | 'boss'
@@ -249,4 +274,6 @@ export interface Run {
   okr: OkrState | null
   reviewLevel: number // Performance Review level (M22), 0 = off
   startedAt: number
+  /** Boss rolled for each act (index act-1). Optional for older saves. */
+  bosses?: string[]
 }
