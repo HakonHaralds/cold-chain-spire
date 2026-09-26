@@ -347,12 +347,13 @@ const defs: CardDef[] = [
   },
   {
     id: 'debug_session', name: 'Debug Session', type: 'skill', rarity: 'uncommon', cls: 'fw', cost: 1, costUp: 0, icon: '🪲', target: 'none',
-    text: () => 'Exhaust ALL Bugs in your hand and discard pile. Draw 1 card and gain 3 Block for each (max 4 cards).',
+    text: () => 'Draw 1 card per Bug in your hand and discard pile (max 4). Then exhaust ALL Bugs there, including any you drew, and gain 3 Block for each.',
     flavor: 'Found it. It was a missing semicolon. In the linker script.',
     play: (c) => {
+      // Draw first, so Bugs pulled in by the draw are cleaned up too instead of reappearing in hand.
+      drawCards(c, Math.min(4, countBugs(c, ['hand', 'discard'])))
       const n = exhaustBugs(c, ['hand', 'discard'])
       gainBlock(c, 'player', 3 * n)
-      drawCards(c, Math.min(4, n))
     },
   },
   {
